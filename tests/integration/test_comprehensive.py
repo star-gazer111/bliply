@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
+
 import os
 import json
 import time
 import requests
+import subprocess
+import threading
 import glob
 from typing import Dict, List, Any
 from dataclasses import dataclass
@@ -76,10 +80,10 @@ class ComprehensiveTestRunner:
                 provider=provider,
                 endpoint=endpoint,
                 method=request_data['method'],
-                latency_ms=response_json.get('latency_ms', 0),
-                price_usd=response_json.get('price_usd', 0),
-                score=response_json.get('score', 0),
-                weights=response_json.get('weights', {}),
+                latency_ms=response_json.get('latency_ms'),
+                price_usd=response_json.get('price_usd'),
+                score=response_json.get('score'),
+                weights=response_json.get('weights'),
                 response_data=response_json,
                 timestamp=time.time()
             )
@@ -143,7 +147,7 @@ class ComprehensiveTestRunner:
         
         
         # Test each request against all providers
-        providers = ["alchemy", "chainstack"]
+        providers = ["alchemy", "chainstack" , "quicknode"]
         
         for i, request_data in enumerate(test_requests):
             print(f"\n📋 Test {i+1}/{len(test_requests)}: {request_data['method']} ({request_data['file']})")
@@ -153,7 +157,7 @@ class ComprehensiveTestRunner:
                 print(f"  🔄 Testing {provider}...")
                 result = self.run_rpc_request(provider, request_data)
                 self.results.append(result)
-                print(f"    ✅ {provider}: Score={result.score:.4f}, Latency={result.latency_ms:.2f}ms, Price=${result.price_usd:.4f}")
+                print(f"    ✅ {provider}: Score={result.score:.4f}, Latency={result.latency_ms:.2f}ms, Price=${result.price_usd:.10f}")
             
             # Test best endpoint
             print(f"  🎯 Testing best endpoint...")
@@ -225,10 +229,11 @@ class ComprehensiveTestRunner:
         print("-" * 40)
         
         best_selections = df[df['Provider'] == 'best']['Selected_Provider'].value_counts()
+        total_selections = best_selections.sum()
         print("Provider selection frequency:")
         for provider, count in best_selections.items():
             if provider:  # Skip empty strings
-                percentage = (count / len(best_selections)) * 100
+                percentage = (count / total_selections) * 100
                 print(f"  {provider}: {count} times ({percentage:.1f}%)")
         
         # Method-wise analysis
@@ -409,7 +414,7 @@ class ComprehensiveTestRunner:
                         df['Method'].nunique(),
                         round((~df['Has_Error']).sum() / len(df) * 100, 2),
                         round(df[df['Provider'] != 'best']['Latency_ms'].mean(), 4),
-                        round(df[df['Provider'] != 'best']['Price_USD'].mean(), 6),
+                        round(df[df['Provider'] != 'best']['Price_USD'].mean(), 10),
                         round(df[df['Provider'] != 'best']['Score'].mean(), 4)
                     ]
                 }
@@ -469,7 +474,7 @@ class ComprehensiveTestRunner:
                 scores = [r.score for r in results]
                 
                 print(f"  Latency variation: {min(latencies):.2f} - {max(latencies):.2f}ms (σ={pd.Series(latencies).std():.2f})")
-                print(f"  Price variation: ${min(prices):.4f} - ${max(prices):.4f} (σ=${pd.Series(prices).std():.4f})")
+                print(f"  Price variation: ${min(prices):.10f} - ${max(prices):.10f} (σ=${pd.Series(prices).std():.10f})")
                 print(f"  Score variation: {min(scores):.4f} - {max(scores):.4f} (σ={pd.Series(scores).std():.4f})")
 
 def main():
