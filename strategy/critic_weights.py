@@ -4,15 +4,15 @@ import pandas as pd
 def compute_critic_weights(df: pd.DataFrame, criteria: list[str]) -> np.ndarray:
     """
     Compute CRITIC weights from historical data.
+    Constant metrics (zero variance) are assigned weight 0.
     """
     norm_matrix = df[criteria].to_numpy(dtype=float)
 
     if norm_matrix.shape[0] < 2:  # not enough samples
         return np.array([1 / len(criteria)] * len(criteria))
 
-    # Standard deviation (avoid 0)
+    # Standard deviation
     stds = np.std(norm_matrix, axis=0, ddof=1)
-    stds = np.where(stds == 0, 1e-10, stds)
 
     # Correlation matrix (handle NaNs)
     corr_matrix = np.corrcoef(norm_matrix.T)
@@ -21,9 +21,14 @@ def compute_critic_weights(df: pd.DataFrame, criteria: list[str]) -> np.ndarray:
     # Information content Cj
     C = []
     for j in range(len(criteria)):
+        if stds[j] < 1e-9:  # constant or nearly constant metric
+            C.append(0.0)
+            continue
+
         corr_sum = np.sum(np.abs(corr_matrix[j])) - 1  # exclude self-corr
         Cj = stds[j] * (1 - (corr_sum / (len(criteria) - 1)))
-        C.append(max(Cj, 1e-10))  # avoid 0
+        C.append(max(Cj, 0.0))
+
     C = np.array(C)
 
     # Normalize weights

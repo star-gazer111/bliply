@@ -28,7 +28,7 @@ class RPCProvider:
         finally:
             latency_ms = (time.time() - start) * 1000
             price = self.price_per_call(method)
-            self.metrics.add_record(self.name, latency_ms, price)
+            self.metrics.add_record(self.name, method,latency_ms, price)
             
             if all_providers is None:
                 all_providers = [self]
@@ -52,7 +52,7 @@ class RPCProvider:
 
 class ChainstackProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
-        total_requests = self.metrics.get_request_count(self.name)
+        total_requests = self.metrics.get_request_count(self.name,method)
         if total_requests > PRICING_CONFIG["chainstack"]["threshold"]:
           return PRICING_CONFIG["chainstack"]["high_volume_price"]
         return PRICING_CONFIG["chainstack"]["low_volume_price"]
@@ -60,7 +60,7 @@ class ChainstackProvider(RPCProvider):
 class AlchemyProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
         compute_units = ALCHEMY_COMPUTE_UNITS.get(method, 0)
-        total_requests = self.metrics.get_request_count(self.name)
+        total_requests = self.metrics.get_request_count(self.name,method)
         if total_requests * compute_units > PRICING_CONFIG["alchemy"]["threshold"]:
            return PRICING_CONFIG["alchemy"]["high_volume_price"] * compute_units
         return PRICING_CONFIG["alchemy"]["low_volume_price"] * compute_units
@@ -68,10 +68,19 @@ class AlchemyProvider(RPCProvider):
 class QuickNodeProvider(RPCProvider):
     def price_per_call(self , method: str = None) -> float:
         credits = QUICKNODE_CREDITS.get(method, 20)
-        total_requests = self.metrics.get_request_count(self.name)
+        total_requests = self.metrics.get_request_count(self.name,method)
         if total_requests * credits > PRICING_CONFIG["quicknode"]["threshold"]:
             return PRICING_CONFIG["quicknode"]["high_volume_price"] * credits
         return PRICING_CONFIG["quicknode"]["low_volume_price"] * credits
+
+class BestProvider(RPCProvider):
+    def __init__(self):
+        super().__init__({"name": "Best", "base_url": ""})  # base_url unused
+        self.name = "Best"
+
+    def call(self, payload: dict, all_providers=None) -> dict:
+        # Best does not directly call RPC — it’s handled in MethodWorker.
+        return {"error": "BestProvider cannot call directly. Use /rpc/best"}
 
 def load_providers():
     instances = []
@@ -82,7 +91,10 @@ def load_providers():
         elif name == "alchemy":
             instances.append(AlchemyProvider(p))
         elif name == "quicknode":
-            instances.append(QuickNodeProvider(p))    
+            instances.append(QuickNodeProvider(p))
+
+    # Add virtual "best" provider
+    instances.append(BestProvider())
     return instances
 
 
