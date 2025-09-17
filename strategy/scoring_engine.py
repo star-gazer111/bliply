@@ -9,7 +9,7 @@ def calculate_dynamic_scores(providers: list):
     Compute CRITIC-based weights from all historical data and
     apply them on the latest record of each provider.
     """
-    # Step 1: Get all historical data for weights
+    # Step 1: Historical data
     historical_df = get_all_historical_data(providers)
     if historical_df.empty:
         weights = np.array([0.5, 0.5])
@@ -18,7 +18,7 @@ def calculate_dynamic_scores(providers: list):
         historical_df["Pnorm"] = normalize(historical_df["Price"])
         weights = compute_critic_weights(historical_df, ["Lnorm", "Pnorm"])
 
-    # Step 2: Latest snapshot for scoring
+    # Step 2: Latest snapshot
     latest_df = get_latest_provider_snapshot(providers)
     if latest_df.empty:
         return latest_df, weights
@@ -26,5 +26,8 @@ def calculate_dynamic_scores(providers: list):
     latest_df["Lnorm"] = normalize(latest_df["Latency"])
     latest_df["Pnorm"] = normalize(latest_df["Price"])
     latest_df["Score"] = np.dot(latest_df[["Lnorm", "Pnorm"]], weights)
+
+    # Replace NaNs if still appear
+    latest_df["Score"] = latest_df["Score"].fillna(0.0)
 
     return latest_df, weights

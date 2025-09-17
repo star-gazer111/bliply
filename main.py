@@ -96,7 +96,7 @@ def rpc_best():
 def records():
     all_records = []
     for provider in providers:
-        all_records.extend(provider.metrics.get_records())
+        all_records.extend(provider.metrics.get_all_records())
     return jsonify(all_records)
 
 
@@ -114,13 +114,13 @@ def analytics():
                 "Price": float(weights[1])
             },
             "providers": [],
-            "total_records": sum(len(p.metrics.get_records()) for p in providers)
+            "total_records": sum(len(p.metrics.get_all_records()) for p in providers)
         }
 
         for _, row in latest_df.iterrows():
             provider_name = row["Provider"]
             provider_obj = provider_dict[provider_name.lower()]
-            records = provider_obj.metrics.get_records()
+            records = provider_obj.metrics.get_all_records()
 
             analytics_data["providers"].append({
                 "name": provider_name,
