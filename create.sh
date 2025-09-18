@@ -1,71 +1,48 @@
 #!/bin/bash
+set -e
 
-# Define the root directory (current directory)
-PROJECT_ROOT="."
+while read -r f; do
+  mkdir -p "$(dirname "$f")"
+  : > "$f"
+done <<'EOF'
+core/config.py
+core/logging_setup.py
+core/exceptions.py
+core/constants.py
+data/__init__.py
+data/providers.py
+data/metrics.py
+data/schemas/rpc_request.py
+data/schemas/rpc_response.py
+services/__init__.py
+services/rpc_client.py
+services/metric_collector.py
+services/quota_manager.py
+services/health_checker.py
+services/db_service.py
+strategy/__init__.py
+strategy/normalizer.py
+strategy/critic_weights.py
+strategy/scoring_engine.py
+strategy/selector.py
+api/__init__.py
+api/v1/__init__.py
+api/v1/optimizer_routes.py
+api/middleware/request_logger.py
+tests/unit/test_normalizer.py
+tests/unit/test_critic_weights.py
+tests/unit/test_selector.py
+tests/integration/test_rpc_client.py
+tests/integration/test_metric_collector.py
+scripts/init_db.py
+scripts/run_optimizer.py
+scripts/generate_test_data.py
+main.py
+requirements.txt
+Dockerfile
+README.md
+.env.example
+EOF
 
-# Create core directory and files
-mkdir -p core
-touch core/config.py
-touch core/logging_setup.py
-touch core/exceptions.py
-touch core/constants.py
-
-# Create data directory and files
-mkdir -p data
-touch data/__init__.py
-touch data/providers.py
-touch data/metrics.py
-mkdir -p data/schemas
-touch data/schemas/rpc_request.py
-touch data/schemas/rpc_response.py
-
-# Create services directory and files
-mkdir -p services
-touch services/__init__.py
-touch services/rpc_client.py
-touch services/metric_collector.py
-touch services/quota_manager.py
-touch services/health_checker.py
-touch services/db_service.py
-
-# Create strategy directory and files
-mkdir -p strategy
-touch strategy/__init__.py
-touch strategy/normalizer.py
-touch strategy/critic_weights.py
-touch strategy/scoring_engine.py
-touch strategy/selector.py
-
-# Create api directory and files
-mkdir -p api
-touch api/__init__.py
-mkdir -p api/v1
-touch api/v1/__init__.py
-touch api/v1/optimizer_routes.py
-mkdir -p api/middleware
-touch api/middleware/request_logger.py
-
-# Create tests directory and files
-mkdir -p tests/unit
-touch tests/unit/test_normalizer.py
-touch tests/unit/test_critic_weights.py
-touch tests/unit/test_selector.py
-mkdir -p tests/integration
-touch tests/integration/test_rpc_client.py
-touch tests/integration/test_metric_collector.py
 mkdir -p tests/mocks
-
-# Create scripts directory and files
-mkdir -p scripts
-touch scripts/init_db.py
-touch scripts/run_optimizer.py
-touch scripts/generate_test_data.py
-
-# Create root level files
-touch main.py
-touch requirements.txt
-touch Dockerfile
-touch README.md
-touch .env.example
-
 echo "Project directory structure created successfully in the current directory!"

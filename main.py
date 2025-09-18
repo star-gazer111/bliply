@@ -23,7 +23,6 @@ class MethodWorker:
         while True:
             payload, result_q = self.queue.get()
             try:
-                # Step 1: Get method-specific data
                 historical_df = get_all_historical_data(providers, method=self.method)
                 latest_df = get_latest_provider_snapshot(providers, method=self.method)
                 scored_df, weights = calculate_dynamic_scores(providers, method=self.method)
@@ -32,7 +31,6 @@ class MethodWorker:
                     result_q.put({"error": f"No providers available for {self.method}"})
                     continue
 
-                # Step 2: Compute scores
                 latest_df["Lnorm"] = 1 - (latest_df["Latency"] - latest_df["Latency"].min()) / \
                                     max(latest_df["Latency"].max() - latest_df["Latency"].min(), 1e-10)
                 latest_df["Pnorm"] = 1 - (latest_df["Price"] - latest_df["Price"].min()) / \
@@ -43,7 +41,6 @@ class MethodWorker:
                 if eligible_df.empty:
                     eligible_df = latest_df
 
-                # Step 3: Pick best provider (skip Best itself to avoid recursion)
                 eligible_df = eligible_df[eligible_df["Provider"].str.lower() != "best"]
                 if eligible_df.empty:
                     result_q.put({"error": f"No eligible real providers for {self.method}"})
@@ -53,10 +50,8 @@ class MethodWorker:
                 best_provider_name = best_row["Provider"]
                 best_provider = provider_dict[best_provider_name.lower()]
 
-                # Step 4: Forward call
                 response = best_provider.call(payload, all_providers=providers)
 
-                # Step 5: Record metrics for Best
                 best_virtual = provider_dict["best"]
                 best_virtual.metrics.add_record(
                     provider="Best",
@@ -65,7 +60,6 @@ class MethodWorker:
                     price=response.get("price_usd", best_row["Price"]),
                 )
 
-                # Step 6: Build final response
                 response.update({
                     "score": float(best_row["Score"]),
                     "weights": {"Latency": float(weights[0]), "Price": float(weights[1])},
@@ -153,7 +147,6 @@ def records():
 
 @app.route("/analytics", methods=["GET"])
 def analytics():
-    """Endpoint to see current provider metrics."""
     try:
         method = request.args.get("method")
         if not method:
