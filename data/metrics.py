@@ -53,9 +53,6 @@ class MetricsStore:
         """Get request counts for all (provider, method) pairs."""
         return self.request_counts.copy()
 
-
-# ---------------- Global Helper Functions ----------------
-
 def get_latest_provider_snapshot(providers: list, method: str) -> pd.DataFrame:
     """Return latest record per provider for a given method."""
     latest = pd.concat([p.metrics.get_latest(method) for p in providers], ignore_index=True)

@@ -1,10 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-# Load .env file from parent directory
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 
-# Provider pricing configuration
 PRICING_CONFIG = {
     "chainstack": {
         "threshold": 20_000_000,

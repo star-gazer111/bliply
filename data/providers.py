@@ -93,7 +93,6 @@ def load_providers():
         elif name == "quicknode":
             instances.append(QuickNodeProvider(p))
 
-    # Add virtual "best" provider
     instances.append(BestProvider())
     return instances
 
