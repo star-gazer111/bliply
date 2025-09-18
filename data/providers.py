@@ -75,7 +75,7 @@ class QuickNodeProvider(RPCProvider):
 
 class BestProvider(RPCProvider):
     def __init__(self):
-        super().__init__({"name": "Best", "base_url": ""})  # base_url unused
+        super().__init__({"name": "Best", "base_url": ""})
         self.name = "Best"
 
     def call(self, payload: dict, all_providers=None) -> dict:
