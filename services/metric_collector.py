@@ -4,11 +4,6 @@ from data.providers import Provider
 from data.metrics import get_latest_provider_snapshot
 
 class MetricCollector:
-    """
-    Step 3: Collect Current Provider Metrics
-    Fetches latency (Li) and price (Pi) for each provider for a specific method.
-    """
-    
     def __init__(self):
         self.cache = {}  # caching recent metrics
         self.cache_ttl = 5  # in seconds
@@ -18,32 +13,8 @@ class MetricCollector:
         providers: List[Provider], 
         method: str
     ) -> Dict[str, Any]:
-        """
-        Collect current metrics for all providers for a specific method.
-        
-        Args:
-            providers: List of Provider objects
-            method: RPC method name (e.g., "eth_blockNumber")
-            
-        Returns:
-            {
-                "method": str,
-                "providers": {
-                    "alchemy": {
-                        "latency_ms": float,
-                        "price_usd": float,
-                        "eligible": bool,
-                        "record_count": int
-                    },
-                    ...
-                },
-                "has_data": bool
-            }
-        """
-        # Getting latest snapshot using existing function
         latest_df = get_latest_provider_snapshot(providers, method=method)
         
-        # Checking if we have any data
         if latest_df.empty:
             return {
                 "method": method,
@@ -51,7 +22,6 @@ class MetricCollector:
                 "has_data": False
             }
         
-        # Build structured metrics dict
         metrics = {
             "method": method,
             "providers": {},
@@ -76,17 +46,6 @@ class MetricCollector:
         method: str, 
         default: float = 1000.0
     ) -> float:
-        """
-        Get current latency for a specific provider/method.
-        
-        Args:
-            provider: Provider object
-            method: RPC method
-            default: Default latency if no data
-            
-        Returns:
-            Average latency in milliseconds
-        """
         records = provider.metrics.get_all_records(method)
         
         if records.empty:
@@ -99,20 +58,6 @@ class MetricCollector:
         provider: Provider, 
         method: str
     ) -> float:
-        """
-        Get current marginal price for a specific provider/method.
-        
-        Returns 0.0 if still in free tier, otherwise current price per request.
-        
-        Args:
-            provider: Provider object
-            method: RPC method
-            
-        Returns:
-            Price in USD per request
-        """
-        
-        # Here we are calling the provider's internal calculate_price() method which is pre-existing
         current_usage = provider.metrics.get_request_count(method)
         price = provider.calculate_marginal_price(current_usage)
         
@@ -122,19 +67,6 @@ class MetricCollector:
         self,
         metrics: Dict[str, Any]
     ) -> Dict[str, Dict[str, float]]:
-        """
-        Calculate min/max for latency and price across all providers.
-        Needed for normalization (Lmin, Lmax, Pmin, Pmax).
-        
-        Args:
-            metrics: Output from collect_current_metrics()
-            
-        Returns:
-            {
-                "latency": {"min": float, "max": float},
-                "price": {"min": float, "max": float}
-            }
-        """
         if not metrics["has_data"]:
             return {
                 "latency": {"min": 0.0, "max": 1.0},
@@ -160,9 +92,4 @@ class MetricCollector:
         providers: List[Provider], 
         method: str
     ) -> pd.DataFrame:
-        """
-        Get metrics as pandas DataFrame (for compatibility with existing code).
-        
-        Returns same format as get_latest_provider_snapshot().
-        """
         return get_latest_provider_snapshot(providers, method=method)

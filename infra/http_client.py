@@ -5,12 +5,6 @@ import requests
 from urllib3.util.retry import Retry
 
 class RPCClient:
-    """
-    Step 9: Forward the Request
-    Handles HTTP communication with RPC providers.
-    Maintains persistent connection pools for low overhead.
-    """
-    
     def __init__(
         self,
         timeout: int = 30,
@@ -18,20 +12,11 @@ class RPCClient:
         pool_connections: int = 10,
         pool_maxsize: int = 20
     ):
-        """
-        Args:
-            timeout: Request timeout in seconds
-            max_retries: Number of retry attempts on failure
-            pool_connections: Number of connection pools to cache
-            pool_maxsize: Max connections per pool
-        """
         self.timeout = timeout
         self.max_retries = max_retries
         
-        # Create session with connection pooling
         self.session = requests.Session()
         
-        # Configure retry strategy
         retry_strategy = Retry(
             total=max_retries,
             backoff_factor=1,  # Wait 1s, 2s, 4s between retries
@@ -39,7 +24,6 @@ class RPCClient:
             allowed_methods=["POST"]
         )
         
-        # Mount adapter with retry strategy
         adapter = HTTPAdapter(
             max_retries=retry_strategy,
             pool_connections=pool_connections,
@@ -48,7 +32,6 @@ class RPCClient:
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
         
-        # Set default headers
         self.session.headers.update({
             "Content-Type": "application/json",
             "User-Agent": "Bliply-RPC-Router/1.0"
@@ -60,21 +43,6 @@ class RPCClient:
         payload: Dict[str, Any],
         timeout: Optional[int] = None
     ) -> Tuple[Dict[str, Any], float]:
-        """
-        Send JSON-RPC request to provider.
-        
-        Args:
-            provider_url: Provider's RPC endpoint URL
-            payload: JSON-RPC request payload
-            timeout: Optional custom timeout (uses default if None)
-            
-        Returns:
-            Tuple of (response_dict, latency_ms)
-            
-        Raises:
-            requests.exceptions.Timeout: If request times out
-            requests.exceptions.RequestException: On network errors
-        """
         start_time = time.time()
         
         try:
@@ -84,13 +52,10 @@ class RPCClient:
                 timeout=timeout or self.timeout
             )
             
-            # Calculate latency
             latency_ms = (time.time() - start_time) * 1000
             
-            # Raise for HTTP errors (4xx, 5xx)
             response.raise_for_status()
             
-            # Parse JSON response
             response_data = response.json()
             
             return response_data, latency_ms
@@ -119,20 +84,6 @@ class RPCClient:
         payload: Dict[str, Any],
         timeout: Optional[int] = None
     ) -> Dict[str, Any]:
-        """
-        Send request with error handling that returns structured error response.
-        Does not raise exceptions - returns error in response dict.
-        
-        Args:
-            provider_url: Provider's RPC endpoint URL
-            payload: JSON-RPC request payload
-            timeout: Optional custom timeout
-            
-        Returns:
-            Dict with either success or error response:
-            Success: {"result": ..., "latency_ms": float}
-            Error: {"error": str, "latency_ms": float}
-        """
         try:
             response_data, latency_ms = self.send_request(
                 provider_url, 
@@ -140,7 +91,6 @@ class RPCClient:
                 timeout
             )
             
-            # Check if response contains JSON-RPC error
             if "error" in response_data:
                 return {
                     "error": response_data["error"],
@@ -181,16 +131,10 @@ class RPCClient:
             }
     
     def close(self):
-        """
-        Close the session and release connections.
-        Call this when shutting down the application.
-        """
         self.session.close()
     
     def __enter__(self):
-        """Context manager support."""
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager support."""
         self.close()

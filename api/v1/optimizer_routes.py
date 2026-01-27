@@ -1,28 +1,14 @@
-"""
-API v1 Routes for RPC Optimizer
-All routes moved from main.py for better code organization.
-"""
 from flask import Blueprint, request, jsonify
 from data.metrics import get_latest_provider_snapshot
 
-# Create blueprint
 optimizer_bp = Blueprint('optimizer', __name__)
 
-# Global references (set by init_routes)
 providers = None
 provider_dict = None
 optimizer = None
 
 
 def init_routes(providers_list, provider_dict_map, optimizer_instance):
-    """
-    Initialize routes with required dependencies.
-    
-    Args:
-        providers_list: List of all Provider objects
-        provider_dict_map: Dict mapping provider names to Provider objects
-        optimizer_instance: RPCOptimizer instance for smart routing
-    """
     global providers, provider_dict, optimizer
     providers = providers_list
     provider_dict = provider_dict_map
@@ -31,7 +17,6 @@ def init_routes(providers_list, provider_dict_map, optimizer_instance):
 
 @optimizer_bp.route("/rpc/<provider_name>", methods=["POST"])
 def rpc_provider(provider_name):
-    """Direct call to a specific provider."""
     provider = provider_dict.get(provider_name.lower())
     if not provider:
         return jsonify({"error": f"Provider '{provider_name}' not found"}), 404
@@ -48,10 +33,8 @@ def rpc_provider(provider_name):
 
 @optimizer_bp.route("/rpc/best", methods=["POST"])
 def rpc_best():
-    """Smart routing - automatically selects best provider using RPCOptimizer."""
     payload = request.json
     
-    # Use RPCOptimizer for intelligent provider selection
     result = optimizer.optimize_request(payload)
     
     return jsonify(result)
@@ -59,7 +42,6 @@ def rpc_best():
 
 @optimizer_bp.route("/records", methods=["GET"])
 def records():
-    """Get all metrics records, optionally filtered by method."""
     try:
         method = request.args.get("method")  # optional filter
         all_records = []
@@ -81,7 +63,6 @@ def records():
 
 @optimizer_bp.route("/analytics", methods=["GET"])
 def analytics():
-    """Get current provider metrics and analytics."""
     try:
         method = request.args.get("method")
         if not method:

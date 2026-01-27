@@ -1,10 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-# Load .env file from parent directory
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 
-# Provider pricing configuration
 PRICING_CONFIG = {
     "chainstack": {
         "threshold": 20_000_000,
@@ -23,7 +21,6 @@ PRICING_CONFIG = {
     }
 }
 
-# Alchemy compute units mapping
 ALCHEMY_COMPUTE_UNITS = {
     'net_version': 0,
     'eth_chainId': 0,
@@ -75,7 +72,6 @@ ALCHEMY_COMPUTE_UNITS = {
     'eth_sendRawTransaction': 40,
 }
 
-# QuickNode credits mapping
 QUICKNODE_CREDITS = {
     'trace_call': 40,
     'default': 20
