@@ -1,5 +1,5 @@
 from flask import Flask
-from data.providers import load_providers
+from providers.registry import load_providers
 from strategy.optimizer import RPCOptimizer
 from api.v1.optimizer_routes import optimizer_bp, init_routes
 

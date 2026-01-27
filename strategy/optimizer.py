@@ -9,13 +9,13 @@ from services.response_handler import ResponseHandler
 
 from strategy.scoring_engine import calculate_dynamic_scores
 
-from data.providers import Provider
+from providers.base import RPCProvider
 
 
 class RPCOptimizer:
     def __init__(
         self,
-        providers: List[Provider],
+        providers: List[RPCProvider],
         enable_exploration: bool = False,
         exploration_rate: float = 0.1,
     ):
@@ -216,7 +216,7 @@ class RPCOptimizer:
 
     def _update_metrics(
         self,
-        provider: Provider,
+        provider: RPCProvider,
         method: str,
         latency_ms: float,
         price_usd: float,
@@ -243,10 +243,10 @@ class RPCOptimizer:
                 provider="Best", method=method, latency_ms=latency_ms, price=price_usd
             )
 
-    def get_provider_by_name(self, name: str) -> Optional[Provider]:
+    def get_provider_by_name(self, name: str) -> Optional[RPCProvider]:
         return self.provider_dict.get(name.lower())
 
-    def get_all_providers(self) -> List[Provider]:
+    def get_all_providers(self) -> List[RPCProvider]:
         return [p for p in self.providers if p.name.lower() != "best"]
 
     def close(self):

@@ -1,5 +1,7 @@
 from typing import Dict, Any, Optional
 import json
+from data.schemas.rpc import RPCRequest
+from pydantic import ValidationError
 
 class RequestParser:
     REQUIRED_FIELDS = ["jsonrpc", "method", "id"]
@@ -9,39 +11,19 @@ class RequestParser:
         pass
     
     def parse_rpc_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        for field in self.REQUIRED_FIELDS:
-            if field not in payload:
-                raise ValueError(f"Missing required field: {field}")
-        
-        if payload.get("jsonrpc") != self.SUPPORTED_JSONRPC_VERSION:
-            raise ValueError(f"Unsupported JSON-RPC version: {payload.get('jsonrpc')}")
-        
-        method = payload.get("method", "").strip()
-        if not method:
-            raise ValueError("Method cannot be empty")
-        
-        params = payload.get("params", [])
-        if not isinstance(params, list):
-            raise ValueError("Params must be a list")
-        
-        request_id = payload.get("id")
-        if not isinstance(request_id, (int, str)):
-            raise ValueError("ID must be an integer or string")
-        
-        chain = payload.get("chain", "")
-        network = payload.get("network", "")
-        
-        parsed_request = {
-            "method": method,
-            "params": params,
-            "id": request_id,
-            "jsonrpc": payload.get("jsonrpc"),
-            "chain": chain,
-            "network": network,
-            "raw_payload": payload  # Keeping original payload for forwarding
-        }
-        
-        return parsed_request
+        try:
+            rpc_req = RPCRequest(**payload)
+            return {
+                "method": rpc_req.method,
+                "params": rpc_req.params,
+                "id": rpc_req.id,
+                "jsonrpc": rpc_req.jsonrpc,
+                "chain": payload.get("chain", ""),
+                "network": payload.get("network", ""),
+                "raw_payload": payload
+            }
+        except ValidationError as e:
+            raise ValueError(f"Invalid RPC request: {e}")
     
     
     def validate_method(self, method: str, supported_methods: Optional[list] = None) -> bool:

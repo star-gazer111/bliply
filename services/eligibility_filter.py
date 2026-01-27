@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 import pandas as pd
-from data.providers import Provider
+from providers.base import RPCProvider
 
 class EligibilityFilter:
     def __init__(
@@ -14,10 +14,10 @@ class EligibilityFilter:
     
     def filter_providers(
         self, 
-        providers: List[Provider], 
+        providers: List[RPCProvider], 
         method: str,
         metrics_df: pd.DataFrame = None
-    ) -> List[Provider]:
+    ) -> List[RPCProvider]:
         eligible_providers = []
         filtered_reasons = {}
         
@@ -69,13 +69,13 @@ class EligibilityFilter:
         
         return eligible_df
     
-    def _check_quota(self, provider: Provider, method: str) -> bool:
+    def _check_quota(self, provider: RPCProvider, method: str) -> bool:
         if hasattr(provider, 'quota_manager'):
             return provider.quota_manager.has_quota(method)
         
         return True
     
-    def _check_health(self, provider: Provider, method: str) -> bool:
+    def _check_health(self, provider: RPCProvider, method: str) -> bool:
         records = provider.metrics.get_all_records(method)
         
         if records.empty:
@@ -86,12 +86,12 @@ class EligibilityFilter:
         
         return True  # Always healthy for now
     
-    def _has_sufficient_data(self, provider: Provider, method: str) -> bool:
+    def _has_sufficient_data(self, provider: RPCProvider, method: str) -> bool:
         records = provider.metrics.get_all_records(method)
         
         return len(records) > 0
     
-    def _is_new_provider(self, provider: Provider, method: str) -> bool:
+    def _is_new_provider(self, provider: RPCProvider, method: str) -> bool:
         records = provider.metrics.get_all_records(method)
         return len(records) == 0
     

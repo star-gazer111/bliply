@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 import pandas as pd
-from data.providers import Provider
+from providers.base import RPCProvider
 from data.metrics import get_latest_provider_snapshot
 
 class MetricCollector:
@@ -10,7 +10,7 @@ class MetricCollector:
     
     def collect_current_metrics(
         self, 
-        providers: List[Provider], 
+        providers: List[RPCProvider], 
         method: str
     ) -> Dict[str, Any]:
         latest_df = get_latest_provider_snapshot(providers, method=method)
@@ -42,7 +42,7 @@ class MetricCollector:
     
     def get_provider_latency(
         self, 
-        provider: Provider, 
+        provider: RPCProvider, 
         method: str, 
         default: float = 1000.0
     ) -> float:
@@ -55,7 +55,7 @@ class MetricCollector:
     
     def get_provider_price(
         self, 
-        provider: Provider, 
+        provider: RPCProvider, 
         method: str
     ) -> float:
         current_usage = provider.metrics.get_request_count(method)
@@ -89,7 +89,7 @@ class MetricCollector:
     
     def get_dataframe(
         self, 
-        providers: List[Provider], 
+        providers: List[RPCProvider], 
         method: str
     ) -> pd.DataFrame:
         return get_latest_provider_snapshot(providers, method=method)
