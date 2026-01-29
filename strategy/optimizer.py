@@ -4,8 +4,8 @@ import pandas as pd
 from services.request_parser import RequestParser
 from services.metric_collector import MetricCollector
 from services.eligibility_filter import EligibilityFilter
-from infra.http_client import RPCClient
 from services.response_handler import ResponseHandler
+from infra.http_client import RPCClient
 
 from strategy.scoring_engine import calculate_dynamic_scores
 
@@ -37,7 +37,6 @@ class RPCOptimizer:
     def optimize_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         try:
 
-
             parsed_request = self.parser.parse_rpc_request(payload)
             method = parsed_request["method"]
             request_id = parsed_request["id"]
@@ -56,13 +55,11 @@ class RPCOptimizer:
                 f"[RPCOptimizer] Collected metrics for {len(metrics['providers'])} providers"
             )
 
-
             scored_df, weights = calculate_dynamic_scores(self.providers, method=method)
 
             print(
                 f"[RPCOptimizer] CRITIC Weights: Latency={weights[0]:.3f}, Price={weights[1]:.3f}"
             )
-
 
             eligible_df = self.eligibility_filter.filter_dataframe(
                 scored_df, allow_fallback=True
@@ -74,7 +71,6 @@ class RPCOptimizer:
                     method=method, request_id=request_id
                 )
 
-            
             best_row = self._select_provider(eligible_df)
             best_provider_name = best_row["Provider"]
             best_provider = self.provider_dict[best_provider_name.lower()]
@@ -83,14 +79,12 @@ class RPCOptimizer:
                 f"[RPCOptimizer] Selected: {best_provider_name} (Score={best_row['Score']:.4f})"
             )
 
-            
             raw_response, actual_latency = self.rpc_client.send_request(
                 provider_url=best_provider.base_url, payload=payload, timeout=30
             )
 
             print(f"[RPCOptimizer] Response received in {actual_latency:.2f}ms")
 
-            
             final_response = self.response_handler.build_response(
                 raw_response=raw_response,
                 selected_provider=best_provider_name,
@@ -101,7 +95,6 @@ class RPCOptimizer:
                 price_usd=float(best_row["Price"]),
             )
 
-            
             self._update_metrics(
                 provider=best_provider,
                 method=method,

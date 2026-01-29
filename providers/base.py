@@ -13,7 +13,9 @@ class RPCProvider:
     def price_per_call(self, method: str = None) -> float:
         return 0.0
 
-    def calculate_marginal_price(self, current_usage: int, method: str = None) -> float:
+    def calculate_marginal_price(
+        self, current_usage: int, method: str = None
+    ) -> float:
         return self.price_per_call(method)
 
     async def call(
@@ -23,7 +25,21 @@ class RPCProvider:
         rpc_client=None,
     ) -> Dict[str, Any]:
         method = payload.get("method", "")
-
+        
+        if not method or not isinstance(method, str) or not method.strip():
+            return {
+                "response": {
+                    "error": {
+                        "code": -32600,
+                        "message": "Invalid Request: method is required and cannot be empty"
+                    }
+                },
+                "latency_ms": 0.0,
+                "price_usd": 0.0,
+                "weights": {"Latency": 0.5, "Price": 0.5},
+                "score": 0.0,
+            }
+        
         if rpc_client is not None:
             try:
                 result, latency_ms = await rpc_client.send_request(
@@ -31,7 +47,7 @@ class RPCProvider:
                 )
             except Exception as e:
                 result = {"error": str(e)}
-                latency_ms = 10000.0  # Max timeout
+                latency_ms = 10000.0
         else:
             import requests
 
