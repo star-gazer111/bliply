@@ -46,7 +46,7 @@ class MetricsStore:
 
 
 
-async def get_latest_provider_snapshot(providers: list, method: str) -> pd.DataFrame:
+def get_latest_provider_snapshot(providers: list, method: str) -> pd.DataFrame:
     latest = pd.concat([p.metrics.get_latest(method) for p in providers], ignore_index=True)
     return latest
 

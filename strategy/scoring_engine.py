@@ -5,7 +5,10 @@ from .critic_weights import compute_critic_weights
 from data.metrics import get_latest_provider_snapshot, get_all_historical_data
 
 def calculate_dynamic_scores(providers: list, method: str = None):
-    historical_df = get_all_historical_data(providers, method=method)
+    # Filter out "Best" provider from scoring
+    actual_providers = [p for p in providers if p.name.lower() != "best"]
+    
+    historical_df = get_all_historical_data(actual_providers, method=method)
     if historical_df.empty:
         weights = np.array([0.5, 0.5])  # fallback equal weights
     else:
@@ -13,7 +16,7 @@ def calculate_dynamic_scores(providers: list, method: str = None):
         historical_df["Pnorm"] = normalize(historical_df["Price"])
         weights = compute_critic_weights(historical_df, ["Lnorm", "Pnorm"])
 
-    latest_df = get_latest_provider_snapshot(providers, method=method)
+    latest_df = get_latest_provider_snapshot(actual_providers, method=method)
     if latest_df.empty:
         return latest_df, weights
 

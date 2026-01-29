@@ -1,7 +1,7 @@
+import aiohttp
 import time
 from typing import Dict, Any, List, Optional
 from data.metrics import MetricsStore
-import aiohttp
 
 
 class RPCProvider:
@@ -20,7 +20,7 @@ class RPCProvider:
     async def call(
         self,
         payload: Dict[str, Any],
-        all_providers: Optional[List["Provider"]] = None,
+        all_providers: Optional[List["RPCProvider"]] = None,
         rpc_client=None,
     ) -> Dict[str, Any]:
         method = payload.get("method", "")
@@ -39,6 +39,9 @@ class RPCProvider:
                 "score": 0.0,
             }
 
+        result = None
+        latency_ms = 0.0
+        
         if rpc_client is not None:
             try:
                 result, latency_ms = await rpc_client.send_request(

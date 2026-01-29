@@ -5,9 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "flask>=3.1.2",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "aiohttp>=3.10.0",
     "pandas>=2.3.2",
     "pydantic>=2.11.7",
     "python-dotenv>=1.1.1",
-    "requests>=2.32.5",
 ]

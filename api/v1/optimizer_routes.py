@@ -17,6 +17,15 @@ def init_routes(providers_list, provider_dict_map, optimizer_instance):
     optimizer = optimizer_instance
 
 
+@router.post("/rpc/best")
+async def rpc_best(rpc_request: RPCRequest):
+    payload = rpc_request.model_dump()
+
+    result = await optimizer.optimize_request(payload)
+
+    return result
+
+
 @router.post("/rpc/{provider_name}")
 async def rpc_provider(provider_name: str, rpc_request: RPCRequest):
     provider = provider_dict.get(provider_name.lower())
@@ -33,15 +42,6 @@ async def rpc_provider(provider_name: str, rpc_request: RPCRequest):
     )
 
     return response
-
-
-@router.post("/rpc/best")
-async def rpc_best(rpc_request: RPCRequest):
-    payload = rpc_request.model_dump()
-
-    result = await optimizer.optimize_request(payload)
-
-    return result
 
 
 @router.get("/records")
