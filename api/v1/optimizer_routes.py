@@ -1,6 +1,6 @@
-from flask import request, jsonify
 from data.metrics import get_latest_provider_snapshot
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from data.schemas.rpc import RPCRequest
 
 router = APIRouter()
 
@@ -10,20 +10,20 @@ provider_dict = None
 optimizer = None
 
 
-async def init_routes(providers_list, provider_dict_map, optimizer_instance):
+def init_routes(providers_list, provider_dict_map, optimizer_instance):
     global providers, provider_dict, optimizer
     providers = providers_list
     provider_dict = provider_dict_map
     optimizer = optimizer_instance
 
 
-@router.post("/rpc/<provider_name>")
-async def rpc_provider(provider_name):
+@router.post("/rpc/{provider_name}")
+async def rpc_provider(provider_name: str, rpc_request: RPCRequest):
     provider = provider_dict.get(provider_name.lower())
     if not provider:
-        return jsonify({"error": f"Provider '{provider_name}' not found"}), 404
+        return {"error": f"Provider '{provider_name}' not found", "code": 404}
 
-    payload = await request.json
+    payload = rpc_request.model_dump()
     response = await provider.call(payload, all_providers=providers)
 
     print(
@@ -32,54 +32,50 @@ async def rpc_provider(provider_name):
         f"Latency: {response['latency_ms']:.2f}ms, Price: ${response['price_usd']:.4f}"
     )
 
-    return jsonify(response)
+    return response
 
 
 @router.post("/rpc/best")
-async def rpc_best():
-    payload = await request.json
+async def rpc_best(rpc_request: RPCRequest):
+    payload = rpc_request.model_dump()
 
     result = await optimizer.optimize_request(payload)
 
-    return jsonify(result)
+    return result
 
 
 @router.get("/records")
-async def records():
+async def records(request: Request):
     try:
-        method = await request.args.get("method")  # optional filter
+        method = request.query_params.get("method")
         all_records = []
 
         for provider in providers:
-            df = await provider.metrics.get_all_records(method)
+            df = provider.metrics.get_all_records(method)
             if not df.empty:
                 all_records.extend(df.to_dict(orient="records"))
 
-        return jsonify(
-            {
-                "method": method if method else "all",
-                "records": all_records,
-                "total_records": len(all_records),
-            }
-        )
+        return {
+            "method": method if method else "all",
+            "records": all_records,
+            "total_records": len(all_records),
+        }
 
     except Exception as e:
-        return jsonify({"error": f"Failed to fetch records: {str(e)}"}), 500
+        return {"error": f"Failed to fetch records: {str(e)}", "code": 500}
 
 
 @router.get("/analytics")
-async def analytics():
+async def analytics(request: Request):
     try:
-        method = await request.args.get("method")
+        method = request.query_params.get("method")
         if not method:
-            return (
-                jsonify(
-                    {"error": "Please provide a method (e.g., ?method=eth_blockNumber)"}
-                ),
-                400,
-            )
+            return {
+                "error": "Please provide a method (e.g., ?method=eth_blockNumber)",
+                "code": 400,
+            }
 
-        latest_df = await get_latest_provider_snapshot(providers, method=method)
+        latest_df = get_latest_provider_snapshot(providers, method=method)
 
         analytics_data = {
             "method": method,
@@ -106,7 +102,7 @@ async def analytics():
                 }
             )
 
-        return jsonify(analytics_data)
+        return analytics_data
 
     except Exception as e:
-        return jsonify({"error": f"Failed to generate analytics: {str(e)}"}), 500
+        return {"error": f"Failed to generate analytics: {str(e)}", "code": 500}

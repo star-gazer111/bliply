@@ -34,7 +34,7 @@ class RPCOptimizer:
         print(f"[RPCOptimizer] Initialized with {len(providers)} providers")
         print(f"[RPCOptimizer] Providers: {[p.name for p in providers]}")
 
-    def optimize_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def optimize_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         try:
 
             parsed_request = self.parser.parse_rpc_request(payload)
@@ -49,7 +49,7 @@ class RPCOptimizer:
 
             if not metrics["has_data"]:
                 print(f"[RPCOptimizer] No metrics data for {method}, using fallback")
-                return self._fallback_routing(payload, parsed_request)
+                return await self._fallback_routing(payload, parsed_request)
 
             print(
                 f"[RPCOptimizer] Collected metrics for {len(metrics['providers'])} providers"
@@ -79,7 +79,7 @@ class RPCOptimizer:
                 f"[RPCOptimizer] Selected: {best_provider_name} (Score={best_row['Score']:.4f})"
             )
 
-            raw_response, actual_latency = self.rpc_client.send_request(
+            raw_response, actual_latency = await self.rpc_client.send_request(
                 provider_url=best_provider.base_url, payload=payload, timeout=30
             )
 
@@ -155,7 +155,7 @@ class RPCOptimizer:
         else:
             return eligible_df.loc[eligible_df["Score"].idxmax()]
 
-    def _fallback_routing(
+    async def _fallback_routing(
         self, payload: Dict[str, Any], parsed_request: Dict[str, Any]
     ) -> Dict[str, Any]:
         method = parsed_request["method"]
@@ -176,7 +176,7 @@ class RPCOptimizer:
         print(f"[RPCOptimizer] Fallback routing to {fallback_provider.name}")
 
         try:
-            raw_response, latency_ms = self.rpc_client.send_request(
+            raw_response, latency_ms = await self.rpc_client.send_request(
                 provider_url=fallback_provider.base_url, payload=payload, timeout=30
             )
 
@@ -242,6 +242,6 @@ class RPCOptimizer:
     def get_all_providers(self) -> List[RPCProvider]:
         return [p for p in self.providers if p.name.lower() != "best"]
 
-    def close(self):
-        self.rpc_client.close()
+    async def close(self):
+        await self.rpc_client.close()
         print("[RPCOptimizer] Closed RPC client connections")

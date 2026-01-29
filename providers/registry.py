@@ -50,17 +50,23 @@ class BestProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
         return 0.0
 
-    def call(
+    async def call(
         self,
         payload: Dict[str, Any],
         all_providers: Optional[List[RPCProvider]] = None,
         rpc_client=None,
     ) -> Dict[str, Any]:
         return {
-            "error": {
-                "code": -32601,
-                "message": "BestProvider cannot call directly. Use RPCOptimizer or /rpc/best endpoint.",
-            }
+            "response": {
+                "error": {
+                    "code": -32601,
+                    "message": "BestProvider cannot call directly. Use RPCOptimizer or /rpc/best endpoint.",
+                }
+            },
+            "latency_ms": 0.0,
+            "price_usd": 0.0,
+            "weights": {"Latency": 0.5, "Price": 0.5},
+            "score": 0.0,
         }
 
 
