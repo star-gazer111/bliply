@@ -2,6 +2,7 @@ from typing import Dict, Any, Optional, Tuple
 import time
 from requests.adapters import HTTPAdapter
 import requests
+import aiohttp
 from urllib3.util.retry import Retry
 
 class RPCClient:

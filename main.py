@@ -1,9 +1,10 @@
 from flask import Flask
+from fastapi import FASTAPI
 from providers.registry import load_providers
 from strategy.optimizer import RPCOptimizer
 from api.v1.optimizer_routes import optimizer_bp, init_routes
 
-app = Flask(__name__)
+app = FASTAPI()
 
 providers = load_providers()
 provider_dict = {p.name.lower(): p for p in providers}

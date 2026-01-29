@@ -10,7 +10,7 @@ from providers.base import RPCProvider
 
 class ChainstackProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
-        total_requests = self.metrics.get_request_count(self.name, method)
+        total_requests = self.metrics.get_request_count(self.name, method) + 1
 
         if total_requests > PRICING_CONFIG["chainstack"]["threshold"]:
             return PRICING_CONFIG["chainstack"]["high_volume_price"]
@@ -21,7 +21,7 @@ class ChainstackProvider(RPCProvider):
 class AlchemyProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
         compute_units = ALCHEMY_COMPUTE_UNITS.get(method, 0)
-        total_requests = self.metrics.get_request_count(self.name, method)
+        total_requests = self.metrics.get_request_count(self.name, method) + 1
         total_cu = total_requests * compute_units
 
         if total_cu > PRICING_CONFIG["alchemy"]["threshold"]:
@@ -33,7 +33,7 @@ class AlchemyProvider(RPCProvider):
 class QuickNodeProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
         credits = QUICKNODE_CREDITS.get(method, 20)
-        total_requests = self.metrics.get_request_count(self.name, method)
+        total_requests = self.metrics.get_request_count(self.name, method) + 1
         total_credits = total_requests * credits
 
         if total_credits > PRICING_CONFIG["quicknode"]["threshold"]:

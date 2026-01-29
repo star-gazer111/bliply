@@ -8,7 +8,7 @@ provider_dict = None
 optimizer = None
 
 
-def init_routes(providers_list, provider_dict_map, optimizer_instance):
+async def init_routes(providers_list, provider_dict_map, optimizer_instance):
     global providers, provider_dict, optimizer
     providers = providers_list
     provider_dict = provider_dict_map
@@ -16,13 +16,13 @@ def init_routes(providers_list, provider_dict_map, optimizer_instance):
 
 
 @optimizer_bp.route("/rpc/<provider_name>", methods=["POST"])
-def rpc_provider(provider_name):
+async def rpc_provider(provider_name):
     provider = provider_dict.get(provider_name.lower())
     if not provider:
         return jsonify({"error": f"Provider '{provider_name}' not found"}), 404
 
-    payload = request.json
-    response = provider.call(payload, all_providers=providers)
+    payload = await request.json
+    response = await provider.call(payload, all_providers=providers)
 
     print(f"[RPC {provider.name}] Score: {response['score']:.4f}, "
           f"Weights: L={response['weights']['Latency']:.3f}, P={response['weights']['Price']:.3f}, "
@@ -32,22 +32,22 @@ def rpc_provider(provider_name):
 
 
 @optimizer_bp.route("/rpc/best", methods=["POST"])
-def rpc_best():
-    payload = request.json
+async def rpc_best():
+    payload = await request.json
     
-    result = optimizer.optimize_request(payload)
+    result = await optimizer.optimize_request(payload)
     
     return jsonify(result)
 
 
 @optimizer_bp.route("/records", methods=["GET"])
-def records():
+async def records():
     try:
-        method = request.args.get("method")  # optional filter
+        method = await request.args.get("method")  # optional filter
         all_records = []
 
         for provider in providers:
-            df = provider.metrics.get_all_records(method)
+            df = await provider.metrics.get_all_records(method)
             if not df.empty:
                 all_records.extend(df.to_dict(orient="records"))
 
@@ -62,13 +62,13 @@ def records():
 
 
 @optimizer_bp.route("/analytics", methods=["GET"])
-def analytics():
+async def analytics():
     try:
-        method = request.args.get("method")
+        method = await request.args.get("method")
         if not method:
             return jsonify({"error": "Please provide a method (e.g., ?method=eth_blockNumber)"}), 400
 
-        latest_df = get_latest_provider_snapshot(providers, method=method)
+        latest_df = await get_latest_provider_snapshot(providers, method=method)
 
         analytics_data = {
             "method": method,

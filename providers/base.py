@@ -16,7 +16,7 @@ class RPCProvider:
     def calculate_marginal_price(self, current_usage: int, method: str = None) -> float:
         return self.price_per_call(method)
 
-    def call(
+    async def call(
         self,
         payload: Dict[str, Any],
         all_providers: Optional[List["Provider"]] = None,
@@ -26,7 +26,7 @@ class RPCProvider:
 
         if rpc_client is not None:
             try:
-                result, latency_ms = rpc_client.send_request(
+                result, latency_ms = await rpc_client.send_request(
                     provider_url=self.base_url, payload=payload, timeout=10
                 )
             except Exception as e:
