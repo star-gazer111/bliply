@@ -51,6 +51,9 @@ async def records(request: Request):
         all_records = []
 
         for provider in providers:
+            # Skip "Best" pseudo-provider to avoid double counting
+            if provider.name.lower() == "best":
+                continue
             df = provider.metrics.get_all_records(method)
             if not df.empty:
                 all_records.extend(df.to_dict(orient="records"))
@@ -81,12 +84,15 @@ async def analytics(request: Request):
             "method": method,
             "providers": [],
             "total_records": sum(
-                len(p.metrics.get_all_records(method)) for p in providers
+                len(p.metrics.get_all_records(method)) for p in providers if p.name.lower() != "best"
             ),
         }
 
         for _, row in latest_df.iterrows():
             provider_name = row["Provider"]
+            # Skip "Best" pseudo-provider to avoid double counting
+            if provider_name.lower() == "best":
+                continue
             provider_obj = provider_dict[provider_name.lower()]
             records = provider_obj.metrics.get_all_records(method)
 

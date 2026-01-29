@@ -103,11 +103,6 @@ class RPCOptimizer:
                 success=True,
             )
 
-            self._update_best_provider_metrics(
-                method=method,
-                latency_ms=actual_latency,
-                price_usd=float(best_row["Price"]),
-            )
 
             return final_response
 
