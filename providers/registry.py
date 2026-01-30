@@ -21,20 +21,27 @@ class ChainstackProvider(RPCProvider):
 class AlchemyProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
         compute_units = ALCHEMY_COMPUTE_UNITS.get(method, 0)
-        total_requests = self.metrics.get_request_count(self.name, method) + 1
-        total_cu = total_requests * compute_units
+        all_counts = self.metrics.get_all_request_counts()
+        total_cu = sum(
+            count * ALCHEMY_COMPUTE_UNITS.get(m, 0)
+            for (provider, m), count in all_counts.items()
+            if provider == self.name
+        )
 
         if total_cu > PRICING_CONFIG["alchemy"]["threshold"]:
             return PRICING_CONFIG["alchemy"]["high_volume_price"] * compute_units
-
         return PRICING_CONFIG["alchemy"]["low_volume_price"] * compute_units
 
 
 class QuickNodeProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
         credits = QUICKNODE_CREDITS.get(method, 20)
-        total_requests = self.metrics.get_request_count(self.name, method) + 1
-        total_credits = total_requests * credits
+        all_counts = self.metrics.get_all_request_counts()
+        total_credits = sum(
+            count * QUICKNODE_CREDITS.get(m, 20)
+            for (provider, m), count in all_counts.items()
+            if provider == self.name
+        )
 
         if total_credits > PRICING_CONFIG["quicknode"]["threshold"]:
             return PRICING_CONFIG["quicknode"]["high_volume_price"] * credits
@@ -57,16 +64,10 @@ class BestProvider(RPCProvider):
         rpc_client=None,
     ) -> Dict[str, Any]:
         return {
-            "response": {
-                "error": {
-                    "code": -32601,
-                    "message": "BestProvider cannot call directly. Use RPCOptimizer or /rpc/best endpoint.",
-                }
-            },
-            "latency_ms": 0.0,
-            "price_usd": 0.0,
-            "weights": {"Latency": 0.5, "Price": 0.5},
-            "score": 0.0,
+            "error": {
+                "code": -32601,
+                "message": "BestProvider cannot call directly. Use RPCOptimizer or /rpc/best endpoint.",
+            }
         }
 
 

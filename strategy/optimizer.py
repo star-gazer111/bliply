@@ -16,7 +16,7 @@ class RPCOptimizer:
     def __init__(
         self,
         providers: List[RPCProvider],
-        enable_exploration: bool = False,
+        enable_exploration: bool = True,
         exploration_rate: float = 0.1,
     ):
         self.providers = providers
