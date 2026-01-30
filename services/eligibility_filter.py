@@ -38,9 +38,12 @@ class EligibilityFilter:
                 continue
 
             if not self._has_sufficient_data(provider, method):
-                filtered_reasons[provider.name] = "Insufficient data"
                 if self._is_new_provider(provider, method):
+                    # New provider: allow it to collect initial data
                     eligible_providers.append(provider)
+                else:
+                    # Has some data but not enough: filter out
+                    filtered_reasons[provider.name] = "Insufficient data"
                 continue
 
             eligible_providers.append(provider)

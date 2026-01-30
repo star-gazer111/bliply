@@ -48,8 +48,8 @@ class RPCOptimizer:
             )
 
             if not metrics["has_data"]:
-                print(f"[RPCOptimizer] No metrics data for {method}, using fallback")
-                return await self._fallback_routing(payload, parsed_request)
+                print(f"[RPCOptimizer] No metrics data for {method}, initializing all providers")
+                return await self._initialize_providers(payload, parsed_request)
 
             print(
                 f"[RPCOptimizer] Collected metrics for {len(metrics['providers'])} providers"
@@ -149,6 +149,83 @@ class RPCOptimizer:
             return eligible_df.loc[random_idx]
         else:
             return eligible_df.loc[eligible_df["Score"].idxmax()]
+
+    async def _initialize_providers(
+        self, payload: Dict[str, Any], parsed_request: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Initialize all providers by calling them in parallel to collect first metrics"""
+        method = parsed_request["method"]
+        import asyncio
+        
+        # Get all eligible providers (excluding "Best")
+        eligible_providers = [p for p in self.providers if p.name.lower() != "best"]
+        
+        if not eligible_providers:
+            return self.response_handler.build_error_response(
+                error_message="No providers available",
+                request_id=parsed_request["id"],
+                error_code=-32603,
+            )
+        
+        print(f"[RPCOptimizer] Initializing {len(eligible_providers)} providers in parallel")
+        
+        # Call all providers in parallel
+        tasks = []
+        for provider in eligible_providers:
+            task = self.rpc_client.send_request(
+                provider_url=provider.base_url, payload=payload, timeout=10
+            )
+            tasks.append((provider, task))
+        
+        # Wait for all responses
+        results = []
+        for provider, task in tasks:
+            try:
+                raw_response, latency_ms = await task
+                price_usd = provider.price_per_call(method)
+                results.append({
+                    "provider": provider,
+                    "response": raw_response,
+                    "latency_ms": latency_ms,
+                    "price_usd": price_usd,
+                    "success": True
+                })
+                # Update metrics immediately
+                self._update_metrics(
+                    provider=provider,
+                    method=method,
+                    latency_ms=latency_ms,
+                    price_usd=price_usd,
+                    success=True,
+                )
+            except Exception as e:
+                print(f"[RPCOptimizer] {provider.name} initialization failed: {e}")
+                results.append({
+                    "provider": provider,
+                    "success": False
+                })
+        
+        # Select the fastest successful provider
+        successful = [r for r in results if r["success"]]
+        if not successful:
+            return self.response_handler.build_error_response(
+                error_message="All providers failed",
+                request_id=parsed_request["id"],
+                error_code=-32603,
+            )
+        
+        best_result = min(successful, key=lambda x: x["latency_ms"])
+        
+        print(f"[RPCOptimizer] Initialized all providers, selected fastest: {best_result['provider'].name} ({best_result['latency_ms']:.2f}ms)")
+        
+        return self.response_handler.build_response(
+            raw_response=best_result["response"],
+            selected_provider=best_result["provider"].name,
+            score=1.0,  # Perfect score for fastest on cold start
+            weights={"Latency": 0.5, "Price": 0.5},
+            latency_ms=best_result["latency_ms"],
+            price_usd=best_result["price_usd"],
+        )
 
     async def _fallback_routing(
         self, payload: Dict[str, Any], parsed_request: Dict[str, Any]
