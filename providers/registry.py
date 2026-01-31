@@ -28,6 +28,8 @@ class AlchemyProvider(RPCProvider):
             if provider == self.name
         )
 
+        total_cu += compute_units
+
         if total_cu > PRICING_CONFIG["alchemy"]["threshold"]:
             return PRICING_CONFIG["alchemy"]["high_volume_price"] * compute_units
         return PRICING_CONFIG["alchemy"]["low_volume_price"] * compute_units
@@ -42,6 +44,8 @@ class QuickNodeProvider(RPCProvider):
             for (provider, m), count in all_counts.items()
             if provider == self.name
         )
+
+        total_credits += credits
 
         if total_credits > PRICING_CONFIG["quicknode"]["threshold"]:
             return PRICING_CONFIG["quicknode"]["high_volume_price"] * credits
