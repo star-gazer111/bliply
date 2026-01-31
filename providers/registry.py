@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Optional
-from core.config import (
+from config import (
     PROVIDERS,
     PRICING_CONFIG,
     ALCHEMY_COMPUTE_UNITS,

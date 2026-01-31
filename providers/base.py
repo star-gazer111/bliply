@@ -1,7 +1,7 @@
 import aiohttp
 import time
 from typing import Dict, Any, List, Optional
-from data.metrics import MetricsStore
+from metrics import MetricsStore
 
 
 class RPCProvider:

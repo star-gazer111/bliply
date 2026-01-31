@@ -27,7 +27,8 @@ class TestResult:
 class ComprehensiveTestRunner:
     def __init__(self, base_url="http://localhost:6969"):
         self.base_url = base_url
-        self.test_data_dir = "/Users/sambhavjain/Desktop/bliply/bliply/test_data"
+        self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        self.test_data_dir = os.path.join(self.project_root, "test_data")
         self.results = []
         self.server_process = None
         
@@ -261,8 +262,8 @@ class ComprehensiveTestRunner:
         
         # Save detailed results to JSON and Excel
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        results_file = f"/Users/sambhavjain/Desktop/bliply/test_results_{timestamp}.json"
-        excel_file = f"/Users/sambhavjain/Desktop/bliply/test_results_{timestamp}.xlsx"
+        results_file = os.path.join(self.project_root, f"test_results_{timestamp}.json")
+        excel_file = os.path.join(self.project_root, f"test_results_{timestamp}.xlsx")
         
         # Convert DataFrames to serializable format
         provider_stats_dict = {}
@@ -482,14 +483,16 @@ def main():
     print("🧪 Bliply Comprehensive Test Suite")
     print("=" * 50)
     
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    
     # Check if we're in the right directory
-    if not os.path.exists("/Users/sambhavjain/Desktop/bliply/bliply/main.py"):
-        print("❌ Error: main.py not found. Please run from the correct directory.")
+    if not os.path.exists(os.path.join(project_root, "main.py")):
+        print(f"❌ Error: main.py not found in {project_root}. Please run from the correct directory.")
         return
     
     # Check if test_data exists
-    if not os.path.exists("/Users/sambhavjain/Desktop/bliply/bliply/test_data"):
-        print("❌ Error: test_data directory not found.")
+    if not os.path.exists(os.path.join(project_root, "test_data")):
+        print(f"❌ Error: test_data directory not found in {project_root}.")
         return
     
     # Run the comprehensive test

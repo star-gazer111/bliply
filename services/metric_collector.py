@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 import pandas as pd
 from providers.base import RPCProvider
-from data.metrics import get_latest_provider_snapshot
+from metrics import get_latest_provider_snapshot
 
 class MetricCollector:
     def __init__(self):
