@@ -112,3 +112,20 @@ async def analytics(request: Request):
 
     except Exception as e:
         return {"error": f"Failed to generate analytics: {str(e)}", "code": 500}
+
+
+@router.get("/cache/stats")
+async def cache_stats():
+    """Get score cache statistics for monitoring."""
+    try:
+        if optimizer is None:
+            return {"error": "Optimizer not initialized", "code": 500}
+        
+        stats = optimizer.get_cache_stats()
+        return {
+            "cache_stats": stats,
+            "ttl_seconds": optimizer.cache_ttl_seconds
+        }
+    except Exception as e:
+        return {"error": f"Failed to get cache stats: {str(e)}", "code": 500}
+

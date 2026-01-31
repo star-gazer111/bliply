@@ -18,6 +18,7 @@ class RPCOptimizer:
         providers: List[RPCProvider],
         enable_exploration: bool = True,
         exploration_rate: float = 0.1,
+        cache_ttl_seconds: float = 5.0,
     ):
         self.providers = providers
         self.provider_dict = {p.name.lower(): p for p in providers}
@@ -30,9 +31,15 @@ class RPCOptimizer:
 
         self.enable_exploration = enable_exploration
         self.exploration_rate = exploration_rate
+        
+        # Initialize score cache
+        from scoring.cache import ScoreCache
+        self.score_cache = ScoreCache(ttl_seconds=cache_ttl_seconds)
+        self.cache_ttl_seconds = cache_ttl_seconds
 
         print(f"[RPCOptimizer] Initialized with {len(providers)} providers")
         print(f"[RPCOptimizer] Providers: {[p.name for p in providers]}")
+        print(f"[RPCOptimizer] Score cache TTL: {cache_ttl_seconds}s")
 
     async def optimize_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         try:
@@ -55,7 +62,9 @@ class RPCOptimizer:
                 f"[RPCOptimizer] Collected metrics for {len(metrics['providers'])} providers"
             )
 
-            scored_df, weights = calculate_dynamic_scores(self.providers, method=method)
+            scored_df, weights = await calculate_dynamic_scores(
+                self.providers, method=method, cache=self.score_cache
+            )
 
             print(
                 f"[RPCOptimizer] CRITIC Weights: Latency={weights[0]:.3f}, Price={weights[1]:.3f}"
@@ -317,3 +326,23 @@ class RPCOptimizer:
     async def close(self):
         await self.rpc_client.close()
         print("[RPCOptimizer] Closed RPC client connections")
+    
+    async def invalidate_cache(self, method: Optional[str] = None):
+        """
+        Manually invalidate score cache.
+        
+        Args:
+            method: Specific method to invalidate, or None to clear all
+        """
+        await self.score_cache.invalidate(method)
+        print(f"[RPCOptimizer] Cache invalidated for method={method or 'ALL'}")
+    
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """
+        Get cache statistics for monitoring.
+        
+        Returns:
+            Dictionary with cache hits, misses, and hit rate
+        """
+        return self.score_cache.get_stats()
+

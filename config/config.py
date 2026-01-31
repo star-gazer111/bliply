@@ -51,3 +51,16 @@ PROVIDERS = [
         "method_credits": QUICKNODE_CREDITS
     }
 ]
+
+# Cache Configuration
+# Controls the score and weights caching mechanism to reduce CPU overhead
+CACHE_CONFIG = {
+    # Enable/disable score caching (set to False to disable caching entirely)
+    "enabled": True,
+    
+    # Time-to-live for cached scores and weights in seconds
+    # Lower values = more frequent recalculation, more accurate scores
+    # Higher values = less CPU usage, potentially stale scores
+    # Recommended: 5.0 for production (balances performance and accuracy)
+    "score_cache_ttl_seconds": 5.0,
+}
