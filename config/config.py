@@ -7,7 +7,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 PRICING_CONFIG = {
     "chainstack": {
         "threshold": 20_000_000,
-        "high_volume_price": 0.000015,
+        "high_volume_price": 0.0000024875,
         "low_volume_price": 0.00000245
     },
     "alchemy": {
@@ -17,8 +17,8 @@ PRICING_CONFIG = {
     },
     "quicknode": {
         "threshold": 80_000_000,
-        "high_volume_price": 0.00000062,
-        "low_volume_price": 0.000000525
+        "high_volume_price": 0.00000055,
+        "low_volume_price": 0.00000062
     }
 }
 
