@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from .normalizer import normalize
-from .critic_weights import compute_critic_weights
+from scoring.utils import normalize
+from scoring.weights import compute_critic_weights
 from metrics import get_latest_provider_snapshot, get_all_historical_data
 
 def calculate_dynamic_scores(providers: list, method: str = None):

@@ -18,6 +18,6 @@ app.include_router(router, prefix="/api")
 providers = load_providers()
 provider_dict = {p.name.lower(): p for p in providers}
 
-optimizer = RPCOptimizer(providers, enable_exploration=False)
+optimizer = RPCOptimizer(providers, enable_exploration=True, exploration_rate=0.3)
 
 init_routes(providers, provider_dict, optimizer)

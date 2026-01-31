@@ -72,7 +72,7 @@ class RPCProvider:
 
         if all_providers:
             try:
-                from strategy.scoring_engine import calculate_dynamic_scores
+                from scoring import calculate_dynamic_scores
 
                 scored_df, calc_weights = calculate_dynamic_scores(
                     all_providers, method=method

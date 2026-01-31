@@ -7,7 +7,7 @@ from services.eligibility_filter import EligibilityFilter
 from services.response_handler import ResponseHandler
 from infra.http_client import RPCClient
 
-from strategy.scoring_engine import calculate_dynamic_scores
+from scoring import calculate_dynamic_scores
 
 from providers.base import RPCProvider
 

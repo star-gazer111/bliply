@@ -6,3 +6,9 @@ def normalize(series: pd.Series) -> pd.Series:
         return pd.Series([1.0] * len(series), index=series.index)
     normed = 1 - (series - vmin) / (vmax - vmin)
     return normed.fillna(0.0)  # just in case
+
+def select_best_provider(df: pd.DataFrame) -> str:
+    eligible = df[df["Eligible"] == True]
+    if eligible.empty:
+        return None
+    return eligible.loc[eligible["Score"].idxmax(), "Provider"]
