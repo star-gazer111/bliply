@@ -46,12 +46,17 @@ class MetricCollector:
         method: str, 
         default: float = 1000.0
     ) -> float:
+        """
+        Get the median latency of the last 10 requests to avoid outliers.
+        """
         records = provider.metrics.get_all_records(method)
         
         if records.empty:
             return default
         
-        return float(records["Latency"].mean())
+        # Take the last 10 records for this method
+        recent = records.tail(10)
+        return float(recent["Latency"].median())
     
     def get_provider_price(
         self, 

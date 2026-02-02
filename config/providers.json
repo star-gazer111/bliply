@@ -1,0 +1,21 @@
+[
+    {
+        "name": "Alchemy",
+        "limit_rps": 5,
+        "limit_monthly": 300000000,
+        "priority": 1,
+        "pricing_model": "cu"
+    },
+    {
+        "name": "QuickNode",
+        "limit_rps": 10,
+        "limit_monthly": 80000000,
+        "priority": 1
+    },
+    {
+        "name": "Chainstack",
+        "limit_rps": 1000,
+        "limit_monthly": 20000000,
+        "priority": 2
+    }
+]

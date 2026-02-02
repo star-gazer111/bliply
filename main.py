@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from providers.registry import load_providers
-from strategy.optimizer import RPCOptimizer
+from core.router import RPCOptimizer
 import logging
 from api.v1.optimizer_routes import router, init_routes
 

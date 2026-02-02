@@ -22,32 +22,31 @@ PRICING_CONFIG = {
     }
 }
 
-PROVIDERS = [
-    {
-        "name": "Chainstack",
-        "base_url": os.getenv("CHAINSTACK_URL"),
-        "type": "flat",
-        "price_per_million": 0.25,
-        "variable_price": True
-    },
-    {
-        "name": "Alchemy",
-        "base_url": os.getenv("ALCHEMY_URL"),
-        "type": "cu",
-        "cu_tiers": [
-            {"limit": 300_000_000, "price_per_million": 0.45},
-            {"limit": float("inf"), "price_per_million": 0.40}
-        ],
-        "method_cus": ALCHEMY_COMPUTE_UNITS
-    },
-    {
-        "name": "QuickNode",
-        "base_url": os.getenv("QUICKNODE_URL"),
-        "type": "credit",
-        "credit_tiers": [
-            {"limit": 80_000_000, "price_per_million": 0.62},
-            {"limit": float("inf"), "price_per_million": 0.525}
-        ],
-        "method_credits": QUICKNODE_CREDITS
-    }
-]
+import json
+
+def load_providers_config():
+    config_path = os.path.join(os.path.dirname(__file__), "providers.json")
+    if not os.path.exists(config_path):
+        # Fallback if file missing
+        return []
+        
+    with open(config_path, "r") as f:
+        providers = json.load(f)
+        
+    # Inject Env Vars for URLs and other config
+    for p in providers:
+        if p["name"] == "Alchemy":
+            p["base_url"] = os.getenv("ALCHEMY_URL")
+            p["type"] = "cu"
+            p["method_cus"] = ALCHEMY_COMPUTE_UNITS
+        elif p["name"] == "QuickNode":
+            p["base_url"] = os.getenv("QUICKNODE_URL")
+            p["type"] = "credit"
+            p["method_credits"] = QUICKNODE_CREDITS
+        elif p["name"] == "Chainstack":
+            p["base_url"] = os.getenv("CHAINSTACK_URL")
+            p["type"] = "flat"
+    
+    return providers
+
+PROVIDERS = load_providers_config()
