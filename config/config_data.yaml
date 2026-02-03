@@ -1,0 +1,100 @@
+providers:
+  alchemy:
+    name: Alchemy
+    priority: 1
+    pricing_model: compute_unit
+    unit_name: CU
+    pricing:
+      paid_plan_price_usd: 5
+      paid_plan_included_units: 11000000
+    tiers:
+      free:
+        limit_rps: 25
+        limit_monthly: 30000000   # 30M CU
+      paid:
+        limit_rps: 300
+        limit_monthly: 11000000  # 11M CU
+    costs:
+      net_version: 0
+      eth_chainId: 0
+      eth_syncing: 0
+      eth_protocolVersion: 0
+      net_listening: 0
+
+      eth_uninstallFilter: 10
+      eth_accounts: 10
+      eth_blockNumber: 10
+      eth_subscribe: 10
+      eth_unsubscribe: 10
+      eth_feeHistory: 10
+      eth_maxPriorityFeePerGas: 10
+      eth_createAccessList: 10
+
+      eth_getTransactionReceipt: 20
+      eth_getUncleByBlockHashAndIndex: 20
+      eth_getUncleByBlockNumberAndIndex: 20
+      eth_getTransactionByBlockHashAndIndex: 20
+      eth_getTransactionByBlockNumberAndIndex: 20
+      eth_getUncleCountByBlockHash: 20
+      eth_getUncleCountByBlockNumber: 20
+      web3_clientVersion: 20
+      web3_sha3: 20
+      eth_getBlockByNumber: 20
+      eth_getStorageAt: 20
+      eth_getTransactionByHash: 20
+      eth_gasPrice: 20
+      eth_getBalance: 20
+      eth_getCode: 20
+      eth_getFilterChanges: 20
+      eth_newBlockFilter: 20
+      eth_newFilter: 20
+      eth_newPendingTransactionFilter: 20
+      eth_getBlockTransactionCountByHash: 20
+      eth_getBlockTransactionCountByNumber: 20
+      eth_getProof: 20
+      eth_getBlockByHash: 20
+      erigon_forks: 20
+      erigon_getHeaderByHash: 20
+      erigon_getHeaderByNumber: 20
+      erigon_getLogsByHash: 20
+      erigon_issuance: 20
+      eth_getTransactionCount: 20
+      eth_estimateGas: 20
+
+      eth_call: 26
+      eth_getFilterLogs: 60
+      eth_getLogs: 60
+
+      eth_sendRawTransaction: 40
+      eth_simulateV1: 40
+
+  chainstack:
+    name: Chainstack
+    priority: 2
+    pricing_model: request
+    unit_name: requests
+    tiers:
+      free:
+        limit_rps: 25
+        limit_monthly: 3000000     # 3M requests
+      paid:
+        limit_rps: 250
+        limit_monthly: 20000000   # 20M requests
+    costs:
+      default: 1                  # 1 request = 1 unit
+
+  quicknode:
+    name: QuickNode
+    priority: 1
+    pricing_model: credit
+    unit_name: credits
+    tiers:
+      free:
+        limit_rps: 15
+        limit_monthly: 10000000   # 10M credits
+      paid:
+        limit_rps: 50
+        limit_monthly: 80000000   # 80M credits
+    costs:
+      default: 20
+      trace_call: 40
