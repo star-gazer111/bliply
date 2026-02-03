@@ -19,15 +19,13 @@ class RPCProvider:
         self.metrics = MetricsStore()
 
     def get_cost(self, method: str) -> int:
-        """
-        Calculate the cost of the request in 'units' (requests or CUs).
-        """
         if self.pricing_model == "cu":
             from config.compute_units import ALCHEMY_COMPUTE_UNITS
-            # Default to 26 (eth_call cost) if unknown, to be safe? Or 10?
-            # Using 10 as a safe default for read ops
             return ALCHEMY_COMPUTE_UNITS.get(method, 10)
-        return 1
+        elif self.pricing_model == "credit":
+            from config.compute_units import QUICKNODE_CREDITS
+            return QUICKNODE_CREDITS.get(method, QUICKNODE_CREDITS.get('default', 20))
+        return 1  # Flat pricing (Chainstack)
 
     def price_per_call(self, method: str = None) -> float:
         return 0.0

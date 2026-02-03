@@ -1,6 +1,7 @@
 import time
 from collections import defaultdict, deque
 
+# keep sliding window of 1 second, remove all requests older than 1 sec, and check if the number of requests(in last one second) is greater than limit_rps. if yes then this is signal to move onto the next provider
 class RateLimiter:
     def __init__(self, window_size_seconds: int = 1):
         self.window_size = window_size_seconds

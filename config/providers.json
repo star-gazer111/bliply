@@ -10,7 +10,8 @@
         "name": "QuickNode",
         "limit_rps": 10,
         "limit_monthly": 80000000,
-        "priority": 1
+        "priority": 1,
+        "pricing_model": "credit"
     },
     {
         "name": "Chainstack",
