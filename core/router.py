@@ -19,8 +19,8 @@ class RPCOptimizer:
     def __init__(
         self,
         providers: List[RPCProvider],
-        enable_exploration: bool = True, # Kept for API compatibility, but unused
-        exploration_rate: float = 0.1,    # Kept for API compatibility
+        enable_exploration: bool = True,
+        exploration_rate: float = 0.1,
     ):
         self.providers = providers
         self.provider_dict = {p.name.lower(): p for p in providers}
@@ -34,7 +34,13 @@ class RPCOptimizer:
         self.rate_limiter = RateLimiter(window_size_seconds=1)
         self.quota_manager = QuotaManager()
         
+        # Exploration settings
+        self.enable_exploration = enable_exploration
+        self.exploration_rate = exploration_rate
+        
         print(f"[RPCOptimizer] Initialized with {len(providers)} providers using Spillover Strategy")
+        if enable_exploration:
+            print(f"[RPCOptimizer] Exploration enabled: {exploration_rate*100}% random selection from free tier")
 
     async def optimize_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         try:
@@ -55,14 +61,36 @@ class RPCOptimizer:
                     error_code=-32000
                 )
 
-            # 2. Iterate and Select First Available (Rate Limit Check)
+            # 2. Select Provider (with optional exploration)
             best_provider = None
-            for p_score in potential_providers:
-                p = p_score.provider
-                # Try to acquire rate limit token
-                if self.rate_limiter.is_allowed(p.name, p.limit_rps):
-                    best_provider = p
-                    break
+            
+            # Exploration Mode: Randomly select from priority 1 providers
+            if self.enable_exploration:
+                import random
+                if random.random() < self.exploration_rate:
+                    # Try random selection from free tier (priority 1)
+                    free_tier_providers = [p for p in potential_providers if p.provider.priority == 1]
+                    
+                    if free_tier_providers:
+                        print(f"[RPCOptimizer] 🎲 Exploration mode: randomly selecting from {len(free_tier_providers)} free tier providers")
+                        random.shuffle(free_tier_providers)
+                        
+                        # Try each random free tier provider
+                        for p_score in free_tier_providers:
+                            p = p_score.provider
+                            if self.rate_limiter.is_allowed(p.name, p.limit_rps):
+                                best_provider = p
+                                print(f"[RPCOptimizer] 🎲 Exploration selected: {p.name}")
+                                break
+            
+            # Deterministic Selection: Use priority + latency sorted list
+            if not best_provider:
+                for p_score in potential_providers:
+                    p = p_score.provider
+                    # Try to acquire rate limit token
+                    if self.rate_limiter.is_allowed(p.name, p.limit_rps):
+                        best_provider = p
+                        break
 
             # the following point is expected to be hit very rarely because the paid plan usually has a high RPS limit
             if not best_provider:
