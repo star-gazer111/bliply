@@ -2,6 +2,8 @@ import json
 import os
 from typing import Dict
 
+# basically maintain a usage_counters.json file where we track CUs/credits/num_requests for each provider
+# and use it to implement the spillover strategy
 class QuotaManager:
     def __init__(self, data_file: str = "data/usage_counters.json"):
         self.data_file = data_file

@@ -1,6 +1,5 @@
 from typing import Dict, Any, List, Optional
 import time
-import asyncio
 from typing import NamedTuple
 
 from services.request_parser import RequestParser
@@ -44,6 +43,9 @@ class RPCOptimizer:
             request_id = parsed_request["id"]
             
             # 1. Get List of Potential Providers (Filtered by Quota only first)
+            # this will return those providers whose MONTHLY quota hasnt been exceeded - and in the list returned providers will be sorted in 2 ways : 
+            # 1. Priority (ascending)
+            # 2. Latency (ascending)
             potential_providers = self._get_potential_providers(method)
             
             if not potential_providers:
@@ -61,7 +63,8 @@ class RPCOptimizer:
                 if self.rate_limiter.is_allowed(p.name, p.limit_rps):
                     best_provider = p
                     break
-            
+
+            # the following point is expected to be hit very rarely because the paid plan usually has a high RPS limit
             if not best_provider:
                  return self.response_handler.build_error_response(
                     error_message="All eligible providers are rate limited",
