@@ -7,7 +7,7 @@ from services.metric_collector import MetricCollector
 from services.response_handler import ResponseHandler
 from core.quota_manager import QuotaManager
 from core.rate_limiter import RateLimiter
-from services.rpc_client import RPCClient
+from infra.rpc_client import RPCClient
 from providers.base import RPCProvider
 
 class ProviderScore(NamedTuple):

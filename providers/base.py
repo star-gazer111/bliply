@@ -14,17 +14,18 @@ class RPCProvider:
         self.limit_rps = config.get("limit_rps", 1000)
         self.limit_monthly = config.get("limit_monthly", 1000000000)
         self.priority = config.get("priority", 2)  # 1=Free, 2=Paid
-        self.pricing_model = config.get("pricing_model", "request") # request | cu
+        self.pricing_model = config.get("pricing_model", "request") # request | cu | credit
+        
+        self.method_costs = config.get("method_costs", {})
         
         self.metrics = MetricsStore()
 
     def get_cost(self, method: str) -> int:
+        """Get the cost (CU/credits/requests) for a specific method."""
         if self.pricing_model == "cu":
-            from config.compute_units import ALCHEMY_COMPUTE_UNITS
-            return ALCHEMY_COMPUTE_UNITS.get(method, 10)
+            return self.method_costs.get(method, 10)
         elif self.pricing_model == "credit":
-            from config.compute_units import QUICKNODE_CREDITS
-            return QUICKNODE_CREDITS.get(method, QUICKNODE_CREDITS.get('default', 20))
+            return self.method_costs.get(method, self.method_costs.get('default', 20))
         return 1  # Flat pricing (Chainstack)
 
     def price_per_call(self, method: str = None) -> float:

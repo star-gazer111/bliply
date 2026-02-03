@@ -1,4 +1,8 @@
-[project]                                                                                                                                   
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
 name = "bliply"
 version = "0.1.0"
 description = "Add your description here"
@@ -11,4 +15,18 @@ dependencies = [
     "pandas>=2.3.2",
     "pydantic>=2.11.7",
     "python-dotenv>=1.1.1",
+    "pyyaml>=6.0",
 ]
+
+[tool.setuptools.packages.find]
+include = [
+    "api*",
+    "core*",
+    "services*",
+    "strategy*",
+    "infra*",
+    "config*",
+    "metrics*",
+    "providers*",
+]
+exclude = ["test_data*"]
