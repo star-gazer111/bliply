@@ -48,28 +48,7 @@ class QuickNodeProvider(RPCProvider):
             return PRICING_CONFIG["quicknode"]["high_volume_price"] * credits
 
         return PRICING_CONFIG["quicknode"]["low_volume_price"] * credits
-
-
-class BestProvider(RPCProvider):
-    def __init__(self):
-        super().__init__({"name": "Best", "base_url": ""})
-        self.name = "Best"
-
-    def price_per_call(self, method: str = None) -> float:
-        return 0.0
-
-    async def call(
-        self,
-        payload: Dict[str, Any],
-        all_providers: Optional[List[RPCProvider]] = None,
-        rpc_client=None,
-    ) -> Dict[str, Any]:
-        return {
-            "error": {
-                "code": -32601,
-                "message": "BestProvider cannot call directly. Use RPCOptimizer or /rpc/best endpoint.",
-            }
-        }
+    
 
 
 def load_providers() -> List[RPCProvider]:
@@ -134,6 +113,5 @@ def load_providers() -> List[RPCProvider]:
         
         print(f"[Registry] Loaded {provider_config['name']} - Tier: {tier_name}, Priority: {priority}, RPS: {tier['limit_rps']}, Monthly: {tier['limit_monthly']:,}")
     
-    instances.append(BestProvider())
     
     return instances
