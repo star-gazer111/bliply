@@ -25,7 +25,7 @@ class TestResult:
     timestamp: float
 
 class ComprehensiveTestRunner:
-    def __init__(self, base_url="http://localhost:6969"):
+    def __init__(self, base_url="http://localhost:8000"):
         self.base_url = base_url
         self.project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.test_data_dir = os.path.join(self.project_root, "test_data")
