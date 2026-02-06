@@ -11,6 +11,7 @@ import json
 import shutil
 from collections import Counter
 from typing import Dict
+from config.config import PRICING_CONFIG
 
 
 class LogicChangeTest:
@@ -100,7 +101,6 @@ async def test_scenario_1_two_free_one_paid():
                 bliply = response.get("bliply", {})
                 selected_provider = bliply.get("selected_provider", "UNKNOWN")
                 latency = bliply.get("latency_ms", 0)
-
                 provider_usage[selected_provider] += 1
 
                 if (i + 1) in [1, 10, 20, 21, 30, 31, 40, 50]:
@@ -126,11 +126,39 @@ async def test_scenario_1_two_free_one_paid():
         free_count = provider_usage.get("Alchemy", 0) + provider_usage.get(
             "QuickNode", 0
         )
-        paid_count = provider_usage.get("Chainstack", 0)
 
+        free_provider_cost = (
+            provider_usage.get("Alchemy", 0)
+            * PRICING_CONFIG["alchemy"]["low_volume_price"]
+            + provider_usage.get("QuickNode", 0)
+            * PRICING_CONFIG["quicknode"]["low_volume_price"]
+        )
+
+        paid_count = provider_usage.get("Chainstack", 0)
+        paid_provider_cost = (
+            paid_count * PRICING_CONFIG["chainstack"]["high_volume_price"]
+        )
+
+        expected_total_provider_cost = (
+            total_requests * PRICING_CONFIG["chainstack"]["high_volume_price"]
+        )
+        real_total_provider_cost = free_provider_cost + paid_provider_cost
+        savings = round(
+            (1 - real_total_provider_cost / expected_total_provider_cost) * 100
+        )
+
+        print(provider_usage)
         print(f"\n Analysis:")
         print(f"   Free tier: {free_count} requests")
         print(f"   Paid tier: {paid_count} requests")
+
+        with open("cost_reports.txt", "w") as f:
+            f.write("======================================\n")
+            f.write(f"Expected cost without Bliply : {expected_total_provider_cost}$\n")
+            f.write("======================================\n")
+            f.write(f"Real cost after using Bliply : {real_total_provider_cost}$\n")
+            f.write("======================================\n")
+            f.write(f"Savings : {savings}%\n")
 
         assert free_count >= 25, f"Expected ≥25 free requests, got {free_count}"
         assert paid_count >= 15, f"Expected ≥15 paid requests, got {paid_count}"
@@ -139,7 +167,6 @@ async def test_scenario_1_two_free_one_paid():
 
     finally:
         tester.restore_usage_data()
-
 
 
 async def test_scenario_2_one_free_one_paid():
