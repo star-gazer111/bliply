@@ -153,12 +153,33 @@ async def test_scenario_1_two_free_one_paid():
         print(f"   Paid tier: {paid_count} requests")
 
         with open("cost_reports.txt", "w") as f:
-            f.write("======================================\n")
+            f.write("=" * 70 + "\n")
+            f.write("SCENARIO 1: 2 Free Providers + 1 Paid Provider\n")
+            f.write("=" * 70 + "\n\n")
+            
+            f.write("Final Results:\n")
+            for provider, count in provider_usage.most_common():
+                f.write(f"   {provider}: {count} requests\n")
+            f.write("\n")
+            
+            f.write("Quota Usage:\n")
+            for provider, usage in final_usage.items():
+                f.write(f"   {provider}: {usage} units\n")
+            f.write("\n")
+            
+            f.write(f"Provider Distribution: {dict(provider_usage)}\n\n")
+            
+            f.write("Analysis:\n")
+            f.write(f"   Free tier: {free_count} requests\n")
+            f.write(f"   Paid tier: {paid_count} requests\n\n")
+            
+            f.write("=" * 70 + "\n")
+            f.write("COST ANALYSIS\n")
+            f.write("=" * 70 + "\n")
             f.write(f"Expected cost without Bliply : {expected_total_provider_cost}$\n")
-            f.write("======================================\n")
             f.write(f"Real cost after using Bliply : {real_total_provider_cost}$\n")
-            f.write("======================================\n")
             f.write(f"Savings : {savings}%\n")
+            f.write("=" * 70 + "\n")
 
         assert free_count >= 25, f"Expected ≥25 free requests, got {free_count}"
         assert paid_count >= 15, f"Expected ≥15 paid requests, got {paid_count}"
@@ -239,14 +260,70 @@ async def test_scenario_2_one_free_one_paid():
         for provider, count in provider_usage.most_common():
             print(f"   {provider}: {count} requests")
 
+        final_usage = tester.get_current_usage()
+        print(f"\n Quota Usage:")
+        for provider, usage in final_usage.items():
+            print(f"   {provider}: {usage} units")
+
         free_count = provider_usage.get("QuickNode", 0)
         paid_count = provider_usage.get("Alchemy", 0) + provider_usage.get(
             "Chainstack", 0
         )
 
+        free_provider_cost = (
+            provider_usage.get("QuickNode", 0)
+            * PRICING_CONFIG["quicknode"]["low_volume_price"]
+        )
+
+        paid_provider_cost = (
+            provider_usage.get("Alchemy", 0)
+            * PRICING_CONFIG["alchemy"]["low_volume_price"]
+            + provider_usage.get("Chainstack", 0)
+            * PRICING_CONFIG["chainstack"]["high_volume_price"]
+        )
+
+        expected_total_provider_cost = (
+            total_requests * PRICING_CONFIG["alchemy"]["low_volume_price"]
+        )
+        real_total_provider_cost = free_provider_cost + paid_provider_cost
+        savings = round(
+            (1 - real_total_provider_cost / expected_total_provider_cost) * 100
+        )
+
+        print(provider_usage)
         print(f"\n Analysis:")
         print(f"   Free tier (QuickNode): {free_count} requests")
         print(f"   Paid tier (Chainstack+Alchemy): {paid_count} requests")
+
+        with open("cost_reports.txt", "a") as f:
+            f.write("\n\n")
+            f.write("=" * 70 + "\n")
+            f.write("SCENARIO 2: 1 Free Provider + 2 Paid Providers\n")
+            f.write("=" * 70 + "\n\n")
+            
+            f.write("Final Results:\n")
+            for provider, count in provider_usage.most_common():
+                f.write(f"   {provider}: {count} requests\n")
+            f.write("\n")
+            
+            f.write("Quota Usage:\n")
+            for provider, usage in final_usage.items():
+                f.write(f"   {provider}: {usage} units\n")
+            f.write("\n")
+            
+            f.write(f"Provider Distribution: {dict(provider_usage)}\n\n")
+            
+            f.write("Analysis:\n")
+            f.write(f"   Free tier (QuickNode): {free_count} requests\n")
+            f.write(f"   Paid tier (Chainstack+Alchemy): {paid_count} requests\n\n")
+            
+            f.write("=" * 70 + "\n")
+            f.write("COST ANALYSIS\n")
+            f.write("=" * 70 + "\n")
+            f.write(f"Expected cost without Bliply : {expected_total_provider_cost}$\n")
+            f.write(f"Real cost after using Bliply : {real_total_provider_cost}$\n")
+            f.write(f"Savings : {savings}%\n")
+            f.write("=" * 70 + "\n")
 
         assert free_count >= 8, f"Expected ~10 free requests, got {free_count}"
         assert paid_count >= 230, f"Expected ~240 paid requests, got {paid_count}"
