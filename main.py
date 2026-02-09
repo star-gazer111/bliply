@@ -13,6 +13,16 @@ async def lifespan(app: FastAPI):
         await optimizer.rpc_client.close()
 
 app = FastAPI(lifespan=lifespan)
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring and container orchestration"""
+    return {
+        "status": "healthy",
+        "service": "bliply-rpc-optimizer",
+        "providers_loaded": len(providers) if 'providers' in globals() else 0
+    }
+
 app.include_router(router, prefix="/api")
 
 providers = load_providers()
