@@ -85,6 +85,12 @@ class RPCOptimizer:
 
                 print(f"[RPCOptimizer] Selected {provider.name} (Priority {provider.priority})")
                 
+                # Try to Reserve Quota
+                estimated_cost = provider.get_cost(method)
+                if not self.quota_manager.try_reserve(provider.name, estimated_cost, provider.limit_monthly):
+                    # print(f"[RPCOptimizer] Quote Reservation Failed: {provider.name}")
+                    continue
+
                 try:
                     # Execute Request
                     start_time = time.time()
@@ -97,9 +103,7 @@ class RPCOptimizer:
                     # Success Handling
                     self._record_metrics(provider, method, actual_latency, success=True)
                     
-                    # Calculate cost (CU or Request count)
-                    cost = provider.get_cost(method)
-                    self.quota_manager.increment(provider.name, count=cost)
+                    # Note: Quota already incremented by try_reserve!
                     
                     return self.response_handler.build_response(
                         raw_response=raw_response,
@@ -115,6 +119,8 @@ class RPCOptimizer:
                     last_error = e
                     # Record metric even on failure
                     self._record_metrics(provider, method, 5000.0, success=False)
+                    # Rollback Quota Reservation
+                    self.quota_manager.decrement(provider.name, estimated_cost)
                     continue # Try next provider
 
             # If we reach here, all providers failed or were rate limited
