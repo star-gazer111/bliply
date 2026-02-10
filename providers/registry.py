@@ -63,10 +63,11 @@ def load_providers() -> List[RPCProvider]:
     
     print(f"[Registry] Paid providers from env: {paid_provider_set if paid_provider_set else 'None (all free)'}")
     
+    config_file = os.getenv("CONFIG_FILE", "config_data.yaml.test")
     config_path = os.path.join(
         os.path.dirname(os.path.dirname(__file__)), 
         "config", 
-        "config_data.yaml"
+        config_file
     )
     
     print(f"[Registry] DEBUG: Loading config from {config_path}")
