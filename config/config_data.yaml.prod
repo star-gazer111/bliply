@@ -1,7 +1,6 @@
 providers:
   alchemy:
     name: Alchemy
-    priority: 1
     pricing_model: compute_unit
     unit_name: CU
     pricing:
@@ -70,7 +69,6 @@ providers:
 
   chainstack:
     name: Chainstack
-    priority: 2
     pricing_model: request
     unit_name: requests
     tiers:
@@ -85,7 +83,6 @@ providers:
 
   quicknode:
     name: QuickNode
-    priority: 1
     pricing_model: credit
     unit_name: credits
     tiers:
