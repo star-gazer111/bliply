@@ -53,7 +53,7 @@ class QuickNodeProvider(RPCProvider):
 
 def load_providers() -> List[RPCProvider]:
     
-    paid_providers_str = os.getenv("PAID_PROVIDERS", "")
+    paid_providers_str = os.getenv("PAID_PROVIDERS", "").strip().lower()
     print(f"[Registry] DEBUG: RAW PAID_PROVIDERS from env: '{paid_providers_str}'")
     
     paid_providers_str = paid_providers_str.strip().lower()
