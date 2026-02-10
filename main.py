@@ -1,15 +1,8 @@
-# Reload trigger
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from providers.registry import load_providers
 from core.router import RPCOptimizer
 import logging
-import os
-from dotenv import load_dotenv
-
-# Force load .env at the very beginning
-load_dotenv()
-
 from api.v1.optimizer_routes import router, init_routes
 
 @asynccontextmanager

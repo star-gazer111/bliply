@@ -62,10 +62,6 @@ class ResponseHandler:
             "error": {
                 "code": error_code,
                 "message": error_message
-            },
-            "bliply": {
-                "selected_provider": "ERROR",
-                "error_message": error_message
             }
         }
         
