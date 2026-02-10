@@ -31,35 +31,18 @@ class QuotaManager:
         except IOError as e:
             print(f"Error saving quota data: {e}")
 
-    def check_allowance(self, provider_name: str, limit_monthly: int, cost: int = 0) -> bool:
-        """Check if the provider is within its monthly limit including the estimated cost."""
+    def check_allowance(self, provider_name: str, limit_monthly: int) -> bool:
+        """Check if the provider is within its monthly limit."""
         if limit_monthly <= 0:
             return True # Unlimited or not configured
             
         current_usage = self.usage_data.get(provider_name, 0)
-        return (current_usage + cost) <= limit_monthly
-
-    def try_reserve(self, provider_name: str, cost: int, limit_monthly: int) -> bool:
-        """
-        Attempt to reserve quota. 
-        If usage + cost <= limit, increments usage and returns True.
-        Otherwise returns False.
-        """
-        if self.check_allowance(provider_name, limit_monthly, cost):
-            self.increment(provider_name, cost)
-            return True
-        return False
+        return current_usage < limit_monthly
 
     def increment(self, provider_name: str, count: int = 1):
         """Increment the usage counter for a provider."""
         self.usage_data[provider_name] = self.usage_data.get(provider_name, 0) + count
         self._save_data() # Simple save on every write for robustness as requested
-
-    def decrement(self, provider_name: str, count: int = 1):
-        """Decrement the usage counter (rollback reservation)."""
-        current = self.usage_data.get(provider_name, 0)
-        self.usage_data[provider_name] = max(0, current - count)
-        self._save_data()
 
     def get_usage(self, provider_name: str) -> int:
         return self.usage_data.get(provider_name, 0)
