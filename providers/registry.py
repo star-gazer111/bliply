@@ -1,10 +1,7 @@
 from typing import Dict, Any, List, Optional
-from config import (
-    PROVIDERS,
-    PRICING_CONFIG,
-    ALCHEMY_COMPUTE_UNITS,
-    QUICKNODE_CREDITS,
-)
+import os
+import yaml
+from config import PRICING_CONFIG
 from providers.base import RPCProvider
 
 
@@ -20,10 +17,10 @@ class ChainstackProvider(RPCProvider):
 
 class AlchemyProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
-        compute_units = ALCHEMY_COMPUTE_UNITS.get(method, 0)
+        compute_units = self.method_costs.get(method, 0)
         all_counts = self.metrics.get_all_request_counts()
         total_cu = sum(
-            count * ALCHEMY_COMPUTE_UNITS.get(m, 0)
+            count * self.method_costs.get(m, 0)
             for (provider, m), count in all_counts.items()
             if provider == self.name
         )
@@ -37,10 +34,10 @@ class AlchemyProvider(RPCProvider):
 
 class QuickNodeProvider(RPCProvider):
     def price_per_call(self, method: str = None) -> float:
-        credits = QUICKNODE_CREDITS.get(method, 20)
+        credits = self.method_costs.get(method, self.method_costs.get('default', 20))
         all_counts = self.metrics.get_all_request_counts()
         total_credits = sum(
-            count * QUICKNODE_CREDITS.get(m, 20)
+            count * self.method_costs.get(m, self.method_costs.get('default', 20))
             for (provider, m), count in all_counts.items()
             if provider == self.name
         )
@@ -51,53 +48,79 @@ class QuickNodeProvider(RPCProvider):
             return PRICING_CONFIG["quicknode"]["high_volume_price"] * credits
 
         return PRICING_CONFIG["quicknode"]["low_volume_price"] * credits
-
-
-class BestProvider(RPCProvider):
-    def __init__(self):
-        super().__init__({"name": "Best", "base_url": ""})
-        self.name = "Best"
-
-    def price_per_call(self, method: str = None) -> float:
-        return 0.0
-
-    async def call(
-        self,
-        payload: Dict[str, Any],
-        all_providers: Optional[List[RPCProvider]] = None,
-        rpc_client=None,
-    ) -> Dict[str, Any]:
-        return {
-            "error": {
-                "code": -32601,
-                "message": "BestProvider cannot call directly. Use RPCOptimizer or /rpc/best endpoint.",
-            }
-        }
+    
 
 
 def load_providers() -> List[RPCProvider]:
+    
+    paid_providers_str = os.getenv("PAID_PROVIDERS", "").strip().lower()
+    print(f"[Registry] DEBUG: RAW PAID_PROVIDERS from env: '{paid_providers_str}'")
+    
+    paid_providers_str = paid_providers_str.strip().lower()
+    paid_provider_set = set(
+        p.strip() for p in paid_providers_str.split(",") if p.strip()
+    )
+    
+    print(f"[Registry] Paid providers from env: {paid_provider_set if paid_provider_set else 'None (all free)'}")
+    
+    config_file = os.getenv("CONFIG_FILE", "config_data.yaml.test")
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), 
+        "config", 
+        config_file
+    )
+    
+    print(f"[Registry] DEBUG: Loading config from {config_path}")
+    
+    with open(config_path, 'r') as f:
+        config_data = yaml.safe_load(f)
+    
     instances = []
-
-    for p in PROVIDERS:
-        name = p["name"].lower()
-
-        if name == "chainstack":
-            instances.append(ChainstackProvider(p))
-        elif name == "alchemy":
-            instances.append(AlchemyProvider(p))
-        elif name == "quicknode":
-            instances.append(QuickNodeProvider(p))
+    
+    for provider_key, provider_config in config_data["providers"].items():
+        provider_name_lower = provider_key.lower()
+        
+        if provider_name_lower in paid_provider_set:
+            tier = provider_config["tiers"]["paid"]
+            priority = 2
+            tier_name = "PAID"
         else:
-            instances.append(RPCProvider(p))
-
-    instances.append(BestProvider())
-
+            tier = provider_config["tiers"]["free"]
+            priority = 1  
+            tier_name = "FREE"
+        
+        env_key = f"{provider_config['name'].upper()}_URL"
+        base_url = os.getenv(env_key)
+        
+        if not base_url:
+            print(f"[Registry] Warning: {env_key} not found in environment, skipping {provider_config['name']}")
+            continue
+        
+        # Clean up URL to avoid SSL/path issues
+        base_url = base_url.strip().rstrip("/")
+        
+        provider_dict = {
+            "name": provider_config["name"],
+            "base_url": base_url,
+            "limit_rps": tier["limit_rps"],
+            "limit_monthly": tier["limit_monthly"],
+            "priority": priority,
+            "pricing_model": provider_config["pricing_model"],
+            "method_costs": provider_config.get("costs", {})
+        }
+        
+        if provider_name_lower == "alchemy":
+            instance = AlchemyProvider(provider_dict)
+        elif provider_name_lower == "quicknode":
+            instance = QuickNodeProvider(provider_dict)
+        elif provider_name_lower == "chainstack":
+            instance = ChainstackProvider(provider_dict)
+        else:
+            instance = RPCProvider(provider_dict)
+        
+        instances.append(instance)
+        
+        print(f"[Registry] Loaded {provider_config['name']} - Tier: {tier_name}, Priority: {priority}, RPS: {tier['limit_rps']}, Monthly: {tier['limit_monthly']:,}")
+    
+    
     return instances
-
-
-def get_alchemy_compute_units(method: str) -> int:
-    return ALCHEMY_COMPUTE_UNITS.get(method, 0)
-
-
-def get_quicknode_credits(method: str) -> int:
-    return QUICKNODE_CREDITS.get(method, 20)

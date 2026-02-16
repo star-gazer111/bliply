@@ -2,3 +2,7 @@
 __pycache__/
 uv.lock.venv./
 .venv/
+improvements.md
+bliply.egg-info/
+venv/
+cost_reports.txt

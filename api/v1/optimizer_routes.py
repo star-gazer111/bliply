@@ -36,9 +36,7 @@ async def rpc_provider(provider_name: str, rpc_request: RPCRequest):
     response = await provider.call(payload, all_providers=providers)
 
     print(
-        f"[RPC {provider.name}] Score: {response['score']:.4f}, "
-        f"Weights: L={response['weights']['Latency']:.3f}, P={response['weights']['Price']:.3f}, "
-        f"Latency: {response['latency_ms']:.2f}ms, Price: ${response['price_usd']:.4f}"
+        f"[RPC {provider.name}] Latency: {response['latency_ms']:.2f}ms, Price: ${response['price_usd']:.4f}"
     )
 
     return response
@@ -101,10 +99,7 @@ async def analytics(request: Request):
                     "name": provider_name,
                     "avg_latency_ms": float(row["Latency"]),
                     "avg_price_usd": float(row["Price"]),
-                    "eligible": bool(row["Eligible"]),
                     "record_count": len(records),
-                    "normalized_latency": float(row.get("Lnorm", 0)),
-                    "normalized_price": float(row.get("Pnorm", 0)),
                 }
             )
 

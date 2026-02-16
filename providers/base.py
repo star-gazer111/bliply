@@ -9,7 +9,24 @@ class RPCProvider:
         self.name = config["name"]
         self.base_url = config["base_url"]
         self.config = config
+        
+        # New fields for Spillover Strategy
+        self.limit_rps = config.get("limit_rps", 1000)
+        self.limit_monthly = config.get("limit_monthly", 1000000000)
+        self.priority = config.get("priority", 2)  # 1=Free, 2=Paid
+        self.pricing_model = config.get("pricing_model", "request") # request | cu | credit
+        
+        self.method_costs = config.get("method_costs", {})
+        
         self.metrics = MetricsStore()
+
+    def get_cost(self, method: str) -> int:
+        """Get the cost (CU/credits/requests) for a specific method."""
+        if self.pricing_model == "cu":
+            return self.method_costs.get(method, 10)
+        elif self.pricing_model == "credit":
+            return self.method_costs.get(method, self.method_costs.get('default', 20))
+        return 1  # Flat pricing (Chainstack)
 
     def price_per_call(self, method: str = None) -> float:
         return 0.0
@@ -35,7 +52,6 @@ class RPCProvider:
                 },
                 "latency_ms": 0.0,
                 "price_usd": 0.0,
-                "weights": {"Latency": 0.5, "Price": 0.5},
                 "score": 0.0,
             }
 
@@ -67,30 +83,12 @@ class RPCProvider:
             provider=self.name, method=method, latency_ms=latency_ms, price=price
         )
 
-        score = 0.5
-        weights = [0.5, 0.5]
-
-        if all_providers:
-            try:
-                from strategy.scoring_engine import calculate_dynamic_scores
-
-                scored_df, calc_weights = calculate_dynamic_scores(
-                    all_providers, method=method
-                )
-                provider_row = scored_df[scored_df["Provider"] == self.name]
-                if not provider_row.empty:
-                    score = float(provider_row["Score"].iloc[0])
-                    weights = calc_weights
-            except Exception:
-                pass
-
         return {
             "response": result,
             "latency_ms": latency_ms,
             "price_usd": price,
-            "weights": {"Latency": weights[0], "Price": weights[1]},
-            "score": score,
+            "score": 0.0, # Deprecated
         }
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} name={self.name}>"
+        return f"<{self.__class__.__name__} name={self.name} Priority={self.priority}>"
