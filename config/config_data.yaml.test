@@ -2,7 +2,6 @@
 providers:
   alchemy:
     name: Alchemy
-    priority: 1
     pricing_model: cu
     tiers:
       free:
@@ -19,7 +18,6 @@ providers:
 
   quicknode:
     name: QuickNode
-    priority: 1
     pricing_model: credit
     tiers:
       free:
@@ -34,7 +32,6 @@ providers:
 
   chainstack:
     name: Chainstack
-    priority: 2
     pricing_model: request
     tiers:
       free:

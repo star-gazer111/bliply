@@ -49,9 +49,6 @@ class RPCOptimizer:
             request_id = parsed_request["id"]
             
             # 1. Get List of Potential Providers (Filtered by Quota only first)
-            # this will return those providers whose MONTHLY quota hasnt been exceeded - and in the list returned providers will be sorted in 2 ways : 
-            # 1. Priority (ascending)
-            # 2. Latency (ascending)
             potential_providers = self._get_potential_providers(method)
             
             if not potential_providers:
@@ -61,74 +58,81 @@ class RPCOptimizer:
                     error_code=-32000
                 )
 
-            # 2. Select Provider (with optional exploration)
-            best_provider = None
+            # 2. Prepare order of providers to try
+            # By default: Priority (asc), then Latency (asc)
+            providers_to_try = [p_score.provider for p_score in potential_providers]
             
-            # Exploration Mode: Randomly select from priority 1 providers
+            # Exploration: If triggered, move a random free provider to the front
             if self.enable_exploration:
                 import random
                 if random.random() < self.exploration_rate:
-                    # Try random selection from free tier (priority 1)
-                    free_tier_providers = [p for p in potential_providers if p.provider.priority == 1]
+                    free_tier = [p for p in providers_to_try if p.priority == 1]
+                    if free_tier:
+                        r_provider = random.choice(free_tier)
+                        # Move randomly selected provider to front
+                        providers_to_try.remove(r_provider)
+                        providers_to_try.insert(0, r_provider)
+                        print(f"[RPCOptimizer] 🎲 Exploration: trying {r_provider.name} first")
+
+            # 3. Iterate and Try until Success
+            last_error = None
+            
+            for provider in providers_to_try:
+                # Check Rate Limit
+                if not self.rate_limiter.is_allowed(provider.name, provider.limit_rps):
+                    # print(f"[RPCOptimizer] Rate limited: {provider.name}")
+                    continue
+
+                print(f"[RPCOptimizer] Selected {provider.name} (Priority {provider.priority})")
+                
+                # Try to Reserve Quota
+                estimated_cost = provider.get_cost(method)
+                if not self.quota_manager.try_reserve(provider.name, estimated_cost, provider.limit_monthly):
+                    # print(f"[RPCOptimizer] Quote Reservation Failed: {provider.name}")
+                    continue
+
+                try:
+                    # Execute Request
+                    start_time = time.time()
+                    raw_response, actual_latency = await self.rpc_client.send_request(
+                        provider_url=provider.base_url,
+                        payload=payload,
+                        timeout=5 # fast failover
+                    )
                     
-                    if free_tier_providers:
-                        print(f"[RPCOptimizer] 🎲 Exploration mode: randomly selecting from {len(free_tier_providers)} free tier providers")
-                        random.shuffle(free_tier_providers)
-                        
-                        # Try each random free tier provider
-                        for p_score in free_tier_providers:
-                            p = p_score.provider
-                            if self.rate_limiter.is_allowed(p.name, p.limit_rps):
-                                best_provider = p
-                                print(f"[RPCOptimizer] 🎲 Exploration selected: {p.name}")
-                                break
-            
-            # Deterministic Selection: Use priority + latency sorted list
-            if not best_provider:
-                for p_score in potential_providers:
-                    p = p_score.provider
-                    # Try to acquire rate limit token
-                    if self.rate_limiter.is_allowed(p.name, p.limit_rps):
-                        best_provider = p
-                        break
+                    # Success Handling
+                    self._record_metrics(provider, method, actual_latency, success=True)
+                    
+                    # Note: Quota already incremented by try_reserve!
+                    
+                    return self.response_handler.build_response(
+                        raw_response=raw_response,
+                        selected_provider=provider.name,
+                        score=1.0,
+                        weights={"Latency": 1.0, "Price": 0.0},
+                        latency_ms=actual_latency,
+                        price_usd=provider.price_per_call(method),
+                        all_provider_scores=None 
+                    )
+                except Exception as e:
+                    print(f"[RPCOptimizer] Error from {provider.name}: {e}")
+                    last_error = e
+                    # Record metric even on failure
+                    self._record_metrics(provider, method, 5000.0, success=False)
+                    # Rollback Quota Reservation
+                    self.quota_manager.decrement(provider.name, estimated_cost)
+                    continue # Try next provider
 
-            # the following point is expected to be hit very rarely because the paid plan usually has a high RPS limit
-            if not best_provider:
-                 return self.response_handler.build_error_response(
-                    error_message="All eligible providers are rate limited",
-                    request_id=request_id,
-                    error_code=-32000 # Server error or 429
-                )
-
-            print(f"[RPCOptimizer] Selected {best_provider.name} (Priority {best_provider.priority})")
-            
-            # 3. Execute Request
-            start_time = time.time()
-            raw_response, actual_latency = await self.rpc_client.send_request(
-                provider_url=best_provider.base_url,
-                payload=payload,
-                timeout=10
-            )
-            
-            # 4. Success Handling
-            self._record_metrics(best_provider, method, actual_latency, success=True)
-            
-            # Calculate cost (CU or Request count)
-            cost = best_provider.get_cost(method)
-            self.quota_manager.increment(best_provider.name, count=cost)
-            
-            return self.response_handler.build_response(
-                raw_response=raw_response,
-                selected_provider=best_provider.name,
-                score=1.0,
-                weights={"Latency": 1.0, "Price": 0.0},
-                latency_ms=actual_latency,
-                price_usd=best_provider.price_per_call(method),
-                all_provider_scores=None 
+            # If we reach here, all providers failed or were rate limited
+            error_msg = f"All eligible providers failed or were rate limited. Last error: {last_error}" if last_error else "All eligible providers are rate limited"
+            return self.response_handler.build_error_response(
+                error_message=error_msg,
+                request_id=request_id,
+                error_code=-32000
             )
 
         except Exception as e:
-            print(f"[RPCOptimizer] Error: {e}")
+            print(f"[RPCOptimizer] Critical Error: {e}")
             return self.response_handler.build_error_response(
                 error_message=str(e),
                 request_id=payload.get("id", 1),
@@ -145,6 +149,7 @@ class RPCOptimizer:
         for p in self.providers:
             # Check Monthly Quota
             if not self.quota_manager.check_allowance(p.name, p.limit_monthly):
+                # print(f"[RPCOptimizer] Monthly Quota Exceeded: {p.name} (Limit {p.limit_monthly})")
                 continue
             
             # Get Latency
